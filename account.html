@@ -24,6 +24,9 @@
   <section class="hero">
     <div class="hero-card">
       <form class="account-form" action="/account" method="post">
+        <div id="accountFormNote" class="form-note hidden" role="status" aria-live="polite"></div>
+        <input id="accountCardAction" name="accountCardAction" type="hidden" value="">
+
         <div class="account-grid">
           <div class="account-panel">
             <span class="eyebrow">Profile</span>
@@ -72,6 +75,37 @@
                 </div>
                 <span class="detail-pill" id="accountLoyaltyPoints">0 pts</span>
               </div>
+            </div>
+
+            <div class="saved-card-actions">
+              <button class="btn btn-outline" type="button" id="showNewCardForm">Add New Card</button>
+              <button class="btn btn-outline danger-btn" type="button" id="removeSavedCard">Remove Saved Card</button>
+            </div>
+
+            <div class="saved-card-form hidden" id="savedCardForm">
+              <h3>Add a new card</h3>
+              <div class="form-grid">
+                <div class="field-group full">
+                  <label for="cardholderName">Cardholder Name</label>
+                  <input id="cardholderName" name="cardholderName" type="text" placeholder="Name on card" autocomplete="cc-name">
+                </div>
+
+                <div class="field-group full">
+                  <label for="cardNumber">Card Number</label>
+                  <input id="cardNumber" name="cardNumber" type="text" placeholder="1234 5678 9012 3456" autocomplete="cc-number" inputmode="numeric">
+                </div>
+
+                <div class="field-group">
+                  <label for="expiry">Expiry</label>
+                  <input id="expiry" name="expiry" type="text" placeholder="MM/YY" autocomplete="cc-exp">
+                </div>
+
+                <div class="field-group">
+                  <label for="cvv">CVV</label>
+                  <input id="cvv" name="cvv" type="password" placeholder="123" autocomplete="cc-csc" inputmode="numeric">
+                </div>
+              </div>
+              <p class="saved-card-note">Only a demo token and the card ending are saved for this project.</p>
             </div>
 
             <div style="margin-top: 18px;">

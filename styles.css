@@ -595,6 +595,61 @@ textarea {
   box-shadow: 0 6px 14px rgba(233, 163, 67, 0.28);
 }
 
+.form-note-success {
+  border-color: rgba(46, 125, 50, 0.28);
+  background: linear-gradient(135deg, rgba(232, 246, 235, 0.96), rgba(241, 250, 244, 0.9));
+}
+
+.form-note-error {
+  border-color: rgba(180, 35, 24, 0.3);
+  background: linear-gradient(135deg, rgba(255, 236, 232, 0.96), rgba(255, 246, 244, 0.9));
+  color: #7a271a;
+}
+
+.saved-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.saved-card-actions .btn {
+  padding: 10px 15px;
+}
+
+.danger-btn {
+  border-color: rgba(180, 35, 24, 0.28);
+  color: #8a1f14;
+}
+
+.danger-btn:hover {
+  background: rgba(180, 35, 24, 0.08);
+}
+
+.danger-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+.saved-card-form {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(15, 79, 150, 0.12);
+}
+
+.saved-card-form h3 {
+  margin-bottom: 14px;
+  color: var(--primary-dark);
+  font-size: 1.1rem;
+}
+
+.saved-card-note {
+  margin-top: 12px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .checkbox-row,
 .radio-row {
   display: flex;

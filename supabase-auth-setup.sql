@@ -184,6 +184,18 @@ with check (
   )
 );
 
+drop policy if exists "saved_payment_methods_delete_own" on public.saved_payment_methods;
+create policy "saved_payment_methods_delete_own"
+on public.saved_payment_methods for delete
+using (
+  exists (
+    select 1
+    from public.users
+    where users.user_id = saved_payment_methods.user_id
+      and users.auth_user_id = auth.uid()
+  )
+);
+
 drop policy if exists "guest_orders_insert_any" on public.guest_orders;
 create policy "guest_orders_insert_any"
 on public.guest_orders for insert
