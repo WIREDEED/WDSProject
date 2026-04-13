@@ -10,7 +10,7 @@
   <header class="logo-header">
     <div class="site-mark" aria-label="WDS">WDS</div>
     <h1>Your Dashboard</h1>
-    <p>Keep up with rewards and the order we are working on for you all in one place.</p>
+    <p>Keep up with your wallet, rewards, and the order we are working on for you all in one place.</p>
   </header>
 
   <nav class="main-nav">
@@ -28,17 +28,19 @@
           <span class="eyebrow">Main Hub</span>
           <h2>Welcome back, <span id="dashboardUserName">friend</span></h2>
           <p>
-            This dashboard is built to feel simple and helpful: your active order first, your loyalty updates below, and live updates from our side when your order moves forward.
+            This dashboard is built to feel simple and helpful: your active order first, your wallet in the top right, your transaction history below, and live updates from our side when your order moves forward.
           </p>
           <div class="button-group">
             <a href="/appointment?customerType=registered" class="btn">Start New Order</a>
+            <a href="/wallet" class="btn btn-outline">Open Wallet</a>
+            <a href="/account" class="btn btn-outline">Manage Account</a>
           </div>
         </div>
 
-        <div class="loyalty-points-box">
-          <h3>Loyalty Points</h3>
-          <p id="dashboardLoyaltyPoints">0 pts</p>
-          <div class="detail-pill">Gain 10% of the price of your order as Points!</div>
+        <div class="wallet-balance-box">
+          <h3>Wallet Balance</h3>
+          <p id="dashboardWalletBalance">$0.00</p>
+          <div class="detail-pill" id="dashboardLoyaltyPoints">0 Loyalty Points</div>
         </div>
       </div>
     </div>
@@ -66,6 +68,7 @@
         <h2>What would you like to do?</h2>
         <div class="quick-actions-stack">
           <a href="/appointment?customerType=registered" class="btn">Place an Order</a>
+          <a href="/wallet" class="btn btn-outline">Add Wallet Funds</a>
           <a href="/account" class="btn btn-outline">Update Profile</a>
         </div>
       </div>
@@ -100,15 +103,15 @@
       </div>
 
       <div class="hero-card dashboard-panel dashboard-panel-full">
-        <span class="eyebrow">Order Ledger</span>
+        <span class="eyebrow">Unified Feed</span>
         <h2>Transaction History</h2>
-        <p>Completed orders appear here with what was ordered, the total deducted, and the loyalty points earned.</p>
+        <p>Your wallet deposits, payments, and loyalty activity should all stay together in one easy-to-read panel. You start at 0 points and earn 10 points for each completed purchase.</p>
 
         <div class="transaction-history-box" id="dashboardTransactions">
           <div class="transaction-item">
             <div>
-              <strong>No completed transactions yet</strong>
-              <p>Once an order is completed, its items, total, and loyalty points will show here.</p>
+              <strong>No wallet or loyalty activity yet</strong>
+              <p>When you add funds, pay with your wallet, or earn points from a completed order, those updates will show here.</p>
             </div>
           </div>
         </div>
