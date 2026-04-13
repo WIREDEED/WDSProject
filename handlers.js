@@ -566,7 +566,7 @@ export const bindReviewForm = (supabase, sessionState, showToast) => {
           payment_status: paymentMethod === "cash" ? "Pending" : "Paid",
           subtotal: subtotal,
           tax: tax,
-          total: total // Let the database RPC apply the discount math!
+          total: total // DB RPC handles the math
         })
         .select("order_id")
         .single();
@@ -598,7 +598,7 @@ export const bindReviewForm = (supabase, sessionState, showToast) => {
 
       if (customerType === "registered" && sessionState.profile) {
         
-        // 1. If they used a discount, trigger the secure backend RPC!
+        // Use the Database RPC if points were spent
         if (discountTier) {
           const { error: rpcError } = await supabase.rpc('spend_loyalty_points', {
             p_user_id: userId,
@@ -609,8 +609,7 @@ export const bindReviewForm = (supabase, sessionState, showToast) => {
           if (rpcError) throw rpcError;
         }
 
-        // 2. No "earn points" code here! 
-        // Your database trigger (trg_earn_points_on_insert) will automatically add the 10% 
+        // NO EARNED POINTS LOGIC HERE - Handled by Database Trigger
 
         if (paymentMethod === "new-card" && formData.get("savePaymentMethod") === "yes" && cardDetails) {
           await createSavedCardRecord(supabase, userId, cardDetails.cardNumber);
