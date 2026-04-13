@@ -27,7 +27,7 @@
       <h2>Guest checkout or account access</h2>
       <p>If you want to move quickly, guest checkout keeps things simple. If you visit often, an account gives you wallet funds, rewards, and a personal dashboard.</p>
 
-      <div class="clothing-grid">
+      <div class="clothing-grid" id="guestOrderChoices">
         <div class="clothing-card">
           <span class="card-badge">Quickest Option</span>
           <h3>Continue as Guest</h3>
@@ -48,6 +48,13 @@
           <p>Save your details, keep up with your orders, and unlock the extras that make repeat visits easier for you.</p>
           <a href="/register?next=order" class="btn btn-outline">Create Account</a>
         </div>
+      </div>
+
+      <div class="clothing-card hidden" id="registeredOrderChoice">
+        <span class="card-badge">Signed In</span>
+        <h3>Ready to start</h3>
+        <p>Your account details will carry into the appointment step automatically.</p>
+        <a href="/appointment?customerType=registered" class="btn" id="registeredStartOrder">Start Order</a>
       </div>
     </div>
   </section>
