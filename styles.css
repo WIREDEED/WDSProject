@@ -358,7 +358,7 @@ footer p {
 
 .clothing-card h3,
 .info-card h3,
-.wallet-balance-box h3,
+.loyalty-points-box h3,
 .panel-header h3 {
   margin: 0 0 10px;
   color: var(--primary-dark);
@@ -646,7 +646,7 @@ textarea {
   min-width: 0;
 }
 
-.wallet-balance-box {
+.loyalty-points-box {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -660,23 +660,19 @@ textarea {
   box-shadow: var(--shadow-lg);
 }
 
-.wallet-balance-box h3 {
+.loyalty-points-box h3 {
   color: #ffffff;
 }
 
-.wallet-balance-box p {
+.loyalty-points-box p {
   margin: 0;
   color: #ffffff;
   font-size: clamp(2rem, 4vw, 2.9rem);
   font-weight: 800;
 }
 
-#dashboardWalletBalance,
-#walletPageBalance {
-  color: #ffffff;
-}
 
-.wallet-balance-box .detail-pill {
+.loyalty-points-box .detail-pill {
   align-self: flex-start;
   background: rgba(255, 255, 255, 0.18);
   color: #ffffff;
@@ -884,6 +880,21 @@ textarea {
   white-space: nowrap;
 }
 
+.transaction-amount-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.transaction-item .loyalty-points-chip {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(45, 125, 78, 0.1);
+  color: var(--success);
+  font-size: 0.78rem;
+}
+
 .transaction-item.positive span {
   color: var(--success);
 }
@@ -894,6 +905,10 @@ textarea {
 
 .transaction-item.loyalty span {
   color: var(--primary);
+}
+
+.transaction-item.negative .loyalty-points-chip {
+  color: var(--success);
 }
 
 /* =========================
@@ -1352,7 +1367,7 @@ textarea {
     width: 100%;
   }
 
-  .wallet-balance-box p,
+  .loyalty-points-box p,
   .wallet-balance-hero .balance-amount {
     font-size: 2rem;
   }

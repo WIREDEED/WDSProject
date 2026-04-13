@@ -105,7 +105,7 @@
           </div>
           <div class="highlight-box">
             <span class="detail-pill">Registered Orders</span>
-            <p>If you have an account, you can keep your contact details, wallet funds, loyalty points, and optional saved payment settings all in one place.</p>
+            <p>If you have an account, you can keep your contact details, loyalty points, and optional saved payment settings all in one place.</p>
           </div>
           <div class="highlight-box">
             <span class="detail-pill">Live Status</span>
@@ -139,8 +139,8 @@
 
     if (customerType === "registered") {
       emailField.required = true;
-      lead.textContent = "Your account information can carry forward into helpful dashboard features like your wallet balance, loyalty activity, and order tracking.";
-      flowNote.textContent = "Since you are using an account, your contact details can be saved and connected to your wallet and loyalty features later.";
+      lead.textContent = "Your account information can carry forward into helpful dashboard features like loyalty activity and order tracking.";
+      flowNote.textContent = "Since you are using an account, your contact details can be saved and connected to your loyalty features later.";
     } else {
       emailField.required = false;
       emailLabel.textContent = "Email Address (Optional)";

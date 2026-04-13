@@ -208,7 +208,6 @@
 
     const options = customerType === "registered"
       ? [
-          { value: "wallet", title: "Pay with Wallet", description: "Use the balance already sitting in your wallet so checkout stays quick." },
           { value: "saved-card", title: "Use Saved Card", description: "Use the payment method you already keep on file." },
           { value: "new-card", title: "Use a New Card", description: "Enter card details for this order and choose later if you want them saved." },
           { value: "cash", title: "Pay with Cash", description: "Pay in person when you come by." }
@@ -219,7 +218,7 @@
         ];
 
     paymentIntro.textContent = customerType === "registered"
-      ? "If you are using your account, you can pay with wallet funds, a saved card, a new card, or cash."
+      ? "If you are using your account, you can pay with a saved card, a new card, or cash."
       : "If you are checking out as a guest, you can pay by card for this order only or choose cash. We will call you when your order is ready for pickup.";
 
     options.forEach((option, index) => {
@@ -292,10 +291,7 @@
       }
 
       paymentHint.classList.remove("hidden");
-
-      if (selectedValue === "wallet") {
-        paymentHint.textContent = "Later, this will pull from your wallet balance automatically once the backend is connected.";
-      } else if (selectedValue === "saved-card") {
+      if (selectedValue === "saved-card") {
         paymentHint.textContent = "Later, your saved card should be charged through a secure stored token, not the raw card number.";
       } else if (selectedValue === "cash") {
         paymentHint.textContent = "If you choose cash, your order should still be saved so we can update the payment status later.";
