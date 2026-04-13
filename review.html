@@ -40,6 +40,8 @@
         <input type="hidden" name="subtotal" id="orderSubtotal">
         <input type="hidden" name="tax" id="orderTax">
         <input type="hidden" name="total" id="orderTotal">
+        <input type="hidden" name="loyaltyPointsRedeemed" id="loyaltyPointsRedeemed" value="0">
+        <input type="hidden" name="loyaltyDiscountAmount" id="loyaltyDiscountAmount" value="0.00">
         <input type="hidden" name="orderStatus" value="Started">
         <input type="hidden" name="shirts" id="orderShirts">
         <input type="hidden" name="pants" id="orderPants">
@@ -78,6 +80,10 @@
             <p><strong>Subtotal:</strong> $<span id="subtotal">0.00</span></p>
             <p><strong>Estimated Tax (5%):</strong> $<span id="tax">0.00</span></p>
             <p><strong>Total:</strong> $<span id="total">0.00</span></p>
+            <p class="hidden" id="discountPreview"><strong>Rewards Discount:</strong> -$<span id="discountAmount">0.00</span></p>
+            <p><strong>Final Total:</strong> $<span id="finalTotal">0.00</span></p>
+            <p><strong>Loyalty Points:</strong> <span id="loyaltyPointsPreview">0 pts</span></p>
+            <div id="loyaltyDiscountOptions" class="loyalty-discount-options"></div>
           </div>
 
           <div class="review-section">
@@ -194,6 +200,12 @@
     document.getElementById("subtotal").textContent = subtotal.toFixed(2);
     document.getElementById("tax").textContent = tax.toFixed(2);
     document.getElementById("total").textContent = total.toFixed(2);
+    document.getElementById("finalTotal").textContent = total.toFixed(2);
+
+    const loyaltyPoints = customerType === "registered" && itemSummary.length ? 10 : 0;
+    document.getElementById("loyaltyPointsPreview").textContent = customerType === "registered"
+      ? `+${loyaltyPoints} pts`
+      : "0 pts - log in or create an account to earn points";
 
     document.getElementById("orderItems").value = itemSummary.join(" | ");
     document.getElementById("orderSubtotal").value = subtotal.toFixed(2);

@@ -1378,3 +1378,37 @@ textarea {
     width: auto;
   }
 }
+
+.loyalty-discount-options {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(15, 61, 74, 0.08);
+}
+
+.loyalty-discount-options h4,
+.loyalty-discount-note {
+  margin: 0;
+}
+
+.loyalty-discount-choice {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1px solid rgba(15, 61, 74, 0.12);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.loyalty-discount-choice.disabled {
+  opacity: 0.55;
+}
+
+.loyalty-discount-choice small {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-light);
+}
