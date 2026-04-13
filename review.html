@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Review Order | WDS</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .tier-buttons { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+    .tier-btn { flex: 1; min-width: 120px; padding: 10px; border: 2px solid #ddd; background: white; cursor: pointer; border-radius: 6px; font-weight: bold; }
+    .tier-btn.selected-tier { background: #000; color: #fff; border-color: #000; }
+    .loyalty-discount-options { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc; }
+  </style>
 </head>
 <body>
   <header class="logo-header">
@@ -27,7 +33,7 @@
       <h2>Look everything over before you confirm</h2>
       <p>The payment choices below change depending on whether you are checking out as a guest or through your account.</p>
 
-<form action="#" method="POST" class="contact-form" id="reviewForm">        
+      <form action="#" method="POST" class="contact-form" id="reviewForm">        
         <input type="hidden" name="customerType" id="orderCustomerType">
         <input type="hidden" name="fullName" id="orderFullName">
         <input type="hidden" name="phone" id="orderPhone">
@@ -202,9 +208,11 @@
     document.getElementById("total").textContent = total.toFixed(2);
     document.getElementById("finalTotal").textContent = total.toFixed(2);
 
-    const loyaltyPoints = customerType === "registered" && itemSummary.length ? 10 : 0;
+    // Calculate 10% of the subtotal (rounded down) for the preview display
+    const loyaltyPoints = customerType === "registered" && itemSummary.length ? Math.floor(subtotal * 0.10) : 0;
+    
     document.getElementById("loyaltyPointsPreview").textContent = customerType === "registered"
-      ? `+${loyaltyPoints} pts`
+      ? `+${loyaltyPoints} pts (Earned on this order)`
       : "0 pts - log in or create an account to earn points";
 
     document.getElementById("orderItems").value = itemSummary.join(" | ");
