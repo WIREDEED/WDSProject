@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wallet | WDS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="logo-header">
+    <div class="site-mark" aria-label="WDS">WDS</div>
+    <h1>Wallet</h1>
+    <p>Add funds, look over your wallet activity, and make your next visit a little easier.</p>
+  </header>
+
+  <nav class="main-nav">
+    <a href="/">Home</a>
+    <a href="/start-order">Start Order</a>
+    <a href="/faqs">FAQ</a>
+    <a href="/contact">Contact</a>
+    <a href="/dashboard" data-auth-link>Dashboard</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-card">
+      <div class="account-grid">
+        <div class="wallet-panel">
+          <span class="eyebrow">Balance</span>
+          <div class="wallet-balance-hero">
+            <p>Available wallet balance</p>
+            <div class="balance-amount" id="walletPageBalance">$0.00</div>
+          </div>
+
+          <form class="wallet-form" action="/wallet/add-funds" method="post">
+            <div class="form-grid">
+              <div class="field-group">
+                <label for="addAmount">Add Funds</label>
+                <input id="addAmount" name="addAmount" type="number" min="5" step="5" placeholder="25">
+              </div>
+
+              <div class="field-group">
+                <label for="fundingSource">Funding Source</label>
+                <select id="fundingSource" name="fundingSource">
+                  <option value="">Choose a source</option>
+                  <option value="saved-card">Saved Card</option>
+                  <option value="new-card">New Card</option>
+                  <option value="cash-counter">Cash at Counter</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="button-group" style="margin-top: 20px;">
+              <button class="btn" type="submit">Add Funds</button>
+              <a href="/dashboard" class="btn btn-outline">Back to Dashboard</a>
+            </div>
+          </form>
+        </div>
+
+        <div class="wallet-panel">
+          <span class="eyebrow">Wallet Notes</span>
+          <h2>Why the wallet matters</h2>
+          <p>Your wallet is a simple way to set money aside for future orders, so paying next time can feel quick and easy.</p>
+
+          <div class="wallet-summary">
+            <div class="wallet-mini-card">
+              <strong>Fast checkout</strong>
+              <p>You do not have to enter payment details every single time you place an order.</p>
+            </div>
+            <div class="wallet-mini-card">
+              <strong>Shared with dashboard</strong>
+              <p>You should see this same balance on your dashboard too.</p>
+            </div>
+            <div class="wallet-mini-card">
+              <strong>Transaction-ready</strong>
+              <p>Later, each deposit and payment can be saved so you can look back over your activity anytime.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="hero">
+    <div class="hero-card">
+      <span class="eyebrow">Activity</span>
+      <h2>Recent wallet transactions</h2>
+
+      <div class="ledger-list" id="walletLedger">
+        <div class="ledger-item">
+          <div>
+            <strong>No wallet activity yet</strong>
+            <p>Once you add money or use your wallet for an order, those updates will appear here.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
+  </footer>
+  <script>
+    const walletParams = new URLSearchParams(window.location.search);
+
+    if (walletParams.get("success") === "deposit") {
+      const successNote = document.createElement("div");
+      successNote.className = "form-note";
+      successNote.textContent = "Your wallet deposit was saved.";
+      document.querySelector(".hero-card")?.prepend(successNote);
+    }
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>

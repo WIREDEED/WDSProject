@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | WDS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="logo-header">
+    <div class="site-mark" aria-label="WDS">WDS</div>
+    <h1>Welcome Back</h1>
+    <p>Log in to check your wallet, loyalty points, and updates on the order we are working on for you.</p>
+  </header>
+
+  <nav class="main-nav">
+    <a href="/">Home</a>
+    <a href="/start-order">Start Order</a>
+    <a href="/faqs">FAQ</a>
+    <a href="/contact">Contact</a>
+    <a href="/login" class="active" data-auth-link>Login</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-card">
+      <div class="split-hero">
+        <div class="hero-panel">
+          <span class="eyebrow">Returning Customer</span>
+          <h2>Log in to your account</h2>
+          <p>Use your email and password to open your dashboard and pick up right where you left off.</p>
+
+          <form action="/login" method="post" class="login-form" id="loginForm">
+            <input type="hidden" name="next" id="loginNext" value="dashboard">
+
+            <div class="form-grid">
+              <div class="field-group full">
+                <label for="email">Email Address</label>
+                <input id="email" name="email" type="email" placeholder="Enter your email" required>
+              </div>
+
+              <div class="field-group full">
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" placeholder="Enter your password" required>
+              </div>
+            </div>
+
+            <div class="button-group" style="margin-top: 20px;">
+              <button type="submit" class="btn">Log In</button>
+              <a href="/guest-checkout" class="btn btn-outline">Continue as Guest</a>
+            </div>
+          </form>
+
+          <div class="auth-switch">
+            <p>Need an account first? <a href="/register" id="registerLink">Create one here</a></p>
+          </div>
+        </div>
+
+        <div class="hero-highlight">
+          <div class="highlight-box">
+            <span class="detail-pill">Current Order</span>
+            <p>See the order we are currently working on for you as soon as you land on your dashboard.</p>
+          </div>
+          <div class="highlight-box">
+            <span class="detail-pill">Recent Completed Order</span>
+            <p>If nothing is active, you can still see the most recent order we finished for you.</p>
+          </div>
+          <div class="highlight-box">
+            <span class="detail-pill">Transaction Feed</span>
+            <p>Keep your wallet activity, payments, and loyalty changes together in one easy place.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
+  </footer>
+  <script>
+    const loginParams = new URLSearchParams(window.location.search);
+    const loginNext = loginParams.get("next") === "order" ? "order" : "dashboard";
+    document.getElementById("loginNext").value = loginNext;
+    document.getElementById("registerLink").href = `/register?next=${loginNext}`;
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>

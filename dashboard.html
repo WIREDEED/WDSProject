@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Dashboard | WDS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="logo-header">
+    <div class="site-mark" aria-label="WDS">WDS</div>
+    <h1>Your Dashboard</h1>
+    <p>Keep up with your wallet, rewards, and the order we are working on for you all in one place.</p>
+  </header>
+
+  <nav class="main-nav">
+    <a href="/">Home</a>
+    <a href="/start-order">Start Order</a>
+    <a href="/faqs">FAQ</a>
+    <a href="/contact">Contact</a>
+    <a href="/dashboard" class="active" data-auth-link>Dashboard</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-card dashboard-main-card">
+      <div class="dashboard-top-row">
+        <div class="dashboard-welcome">
+          <span class="eyebrow">Main Hub</span>
+          <h2>Welcome back, <span id="dashboardUserName">friend</span></h2>
+          <p>
+            This dashboard is built to feel simple and helpful: your active order first, your wallet in the top right, your transaction history below, and live updates from our side when your order moves forward.
+          </p>
+          <div class="button-group">
+            <a href="/appointment?customerType=registered" class="btn">Start New Order</a>
+            <a href="/wallet" class="btn btn-outline">Open Wallet</a>
+            <a href="/account" class="btn btn-outline">Manage Account</a>
+          </div>
+        </div>
+
+        <div class="wallet-balance-box">
+          <h3>Wallet Balance</h3>
+          <p id="dashboardWalletBalance">$0.00</p>
+          <div class="detail-pill" id="dashboardLoyaltyPoints">0 Loyalty Points</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="hero">
+    <div class="dashboard-grid">
+      <div class="hero-card dashboard-panel">
+        <span class="eyebrow">Active Order</span>
+        <h2>Current Order</h2>
+        <p>When you sign in, this is where the order we are currently working on for you will appear first.</p>
+
+        <div class="order-status-highlight">
+          <div class="status-main">
+            <h3 id="activeOrderTitle">No active order yet</h3>
+            <p id="activeOrderLead">Once you place your first order, you will be able to see its current status here.</p>
+            <p><strong>Status:</strong> <span class="status-badge started" id="activeOrderStatus">Waiting for your first order</span></p>
+            <p id="activeOrderMeta"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-card dashboard-panel">
+        <span class="eyebrow">Quick Actions</span>
+        <h2>What would you like to do?</h2>
+        <div class="quick-actions-stack">
+          <a href="/appointment?customerType=registered" class="btn">Place an Order</a>
+          <a href="/wallet" class="btn btn-outline">Add Wallet Funds</a>
+          <a href="/account" class="btn btn-outline">Update Profile</a>
+        </div>
+      </div>
+
+      <div class="hero-card dashboard-panel">
+        <span class="eyebrow">Business Updates</span>
+        <h2>Order Progress</h2>
+        <p>Once you place an order, this timeline is where you can follow it from started to ready for pickup.</p>
+
+        <div class="status-timeline" id="dashboardTimeline">
+          <div class="timeline-step current">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <strong>No timeline yet</strong>
+              <p>Your order updates will appear here after your first order is placed.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-card dashboard-panel">
+        <span class="eyebrow">Fallback View</span>
+        <h2>Recent Completed Order</h2>
+        <p>If we are not working on anything for you right now, this section can show the most recent order we finished for you.</p>
+
+        <div class="completed-order-box">
+          <div id="completedOrderBox">
+            <p><strong>No completed orders yet</strong></p>
+            <p>As soon as we finish your first order, you will see it here.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-card dashboard-panel dashboard-panel-full">
+        <span class="eyebrow">Unified Feed</span>
+        <h2>Transaction History</h2>
+        <p>Your wallet deposits, payments, and loyalty activity should all stay together in one easy-to-read panel. You start at 0 points and earn 10 points for each completed purchase.</p>
+
+        <div class="transaction-history-box" id="dashboardTransactions">
+          <div class="transaction-item">
+            <div>
+              <strong>No wallet or loyalty activity yet</strong>
+              <p>When you add funds, pay with your wallet, or earn points from a completed order, those updates will show here.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>

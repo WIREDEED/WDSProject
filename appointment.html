@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Appointment | WDS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="logo-header">
+    <div class="site-mark" aria-label="WDS">WDS</div>
+    <h1>Book Your Appointment</h1>
+    <p>Tell us what you need and when you would like to bring it in.</p>
+  </header>
+
+  <nav class="main-nav">
+    <a href="/">Home</a>
+    <a href="/start-order" class="active">Start Order</a>
+    <a href="/faqs">FAQ</a>
+    <a href="/contact">Contact</a>
+    <a href="/login" data-auth-link>Login</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-card">
+      <div class="split-hero">
+        <div class="hero-panel">
+          <span class="eyebrow">Appointment Details</span>
+          <h2>Tell us how we can help you</h2>
+          <p id="appointmentLead">We will carry your information through the next steps so you can look everything over before payment.</p>
+
+          <form class="appointment-form" action="/clothing" method="get">
+            <input type="hidden" id="customerType" name="customerType" value="">
+
+            <div class="form-grid">
+              <div class="field-group full">
+                <label for="fullName">Full Name</label>
+                <input id="fullName" name="fullName" type="text" placeholder="Your full name" required>
+              </div>
+
+              <div class="field-group">
+                <label for="phone">Phone Number</label>
+                <input id="phone" name="phone" type="tel" placeholder="(555) 123-4567" data-format="phone" required>
+              </div>
+
+              <div class="field-group">
+                <label for="email" id="emailLabel">Email Address</label>
+                <input id="email" name="email" type="email" placeholder="Your email address">
+              </div>
+
+              <div class="field-group">
+                <label for="service">Service Type</label>
+                <select id="service" name="service" required>
+                  <option value="">Select a service</option>
+                  <option value="Dry Cleaning">Dry Cleaning</option>
+                  <option value="Wash and Fold">Wash and Fold</option>
+                  <option value="Ironing">Ironing</option>
+                  <option value="Bedding and Linen">Bedding and Linen</option>
+                  <option value="Curtain Cleaning">Curtain Cleaning</option>
+                  <option value="Leather Cleaning">Leather Cleaning</option>
+                  <option value="Mixed Order">Mixed Order</option>
+                </select>
+              </div>
+
+              <div class="field-group">
+                <label for="date">Appointment Date</label>
+                <input id="date" name="date" type="date" required>
+              </div>
+
+              <div class="field-group">
+                <label for="time">Preferred Time</label>
+                <select id="time" name="time" required>
+                  <option value="">Select a time</option>
+                  <option value="9:00 AM">9:00 AM</option>
+                  <option value="10:00 AM">10:00 AM</option>
+                  <option value="11:00 AM">11:00 AM</option>
+                  <option value="12:00 PM">12:00 PM</option>
+                  <option value="1:00 PM">1:00 PM</option>
+                  <option value="2:00 PM">2:00 PM</option>
+                  <option value="3:00 PM">3:00 PM</option>
+                  <option value="4:00 PM">4:00 PM</option>
+                  <option value="5:00 PM">5:00 PM</option>
+                </select>
+              </div>
+
+              <div class="field-group full">
+                <label for="notes">Special Instructions</label>
+                <textarea id="notes" name="notes" placeholder="Stains, delicate fabrics, rush requests, pickup notes, or anything else we should know"></textarea>
+              </div>
+            </div>
+
+            <div id="flowNote" class="form-note"></div>
+
+            <div class="button-group" style="margin-top: 20px;">
+              <a href="/start-order" class="btn btn-outline">Back</a>
+              <button class="btn" type="submit">Continue to Item Selection</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="hero-highlight">
+          <div class="highlight-box">
+            <span class="detail-pill">Guest Orders</span>
+            <p>If you are checking out as a guest, we only ask for the basics. Your card details are one-time use unless you decide to make an account later.</p>
+          </div>
+          <div class="highlight-box">
+            <span class="detail-pill">Registered Orders</span>
+            <p>If you have an account, you can keep your contact details, wallet funds, loyalty points, and optional saved payment settings all in one place.</p>
+          </div>
+          <div class="highlight-box">
+            <span class="detail-pill">Live Status</span>
+            <p>Your order can later show live updates on your dashboard as we move it from started to ready for pickup.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
+  </footer>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const customerType = params.get("customerType") || "guest";
+    const fullName = params.get("fullName") || "";
+    const phone = params.get("phone") || "";
+    const email = params.get("email") || "";
+
+    document.getElementById("customerType").value = customerType;
+    document.getElementById("fullName").value = fullName;
+    document.getElementById("phone").value = phone;
+    document.getElementById("email").value = email;
+
+    const emailField = document.getElementById("email");
+    const emailLabel = document.getElementById("emailLabel");
+    const lead = document.getElementById("appointmentLead");
+    const flowNote = document.getElementById("flowNote");
+
+    if (customerType === "registered") {
+      emailField.required = true;
+      lead.textContent = "Your account information can carry forward into helpful dashboard features like your wallet balance, loyalty activity, and order tracking.";
+      flowNote.textContent = "Since you are using an account, your contact details can be saved and connected to your wallet and loyalty features later.";
+    } else {
+      emailField.required = false;
+      emailLabel.textContent = "Email Address (Optional)";
+      lead.textContent = "Your phone number is the main way we will reach you for a guest order. Email is optional, and we will give you a call when your order is ready for pickup.";
+      flowNote.textContent = "As a guest, you only need your name and phone number here. You will choose payment on the review step, and we will call you when your order is ready.";
+    }
+
+    const dateInput = document.getElementById("date");
+    const today = new Date().toISOString().split("T")[0];
+    dateInput.min = today;
+
+    const isValidCalendarDate = (value) => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return false;
+      }
+
+      const [year, month, day] = value.split("-").map(Number);
+      const parsed = new Date(`${value}T00:00:00`);
+
+      return (
+        !Number.isNaN(parsed.getTime()) &&
+        parsed.getFullYear() === year &&
+        parsed.getMonth() + 1 === month &&
+        parsed.getDate() === day
+      );
+    };
+
+    const validateDateInput = () => {
+      const value = dateInput.value.trim();
+
+      if (!value) {
+        dateInput.setCustomValidity("Please choose a valid appointment date.");
+        return;
+      }
+
+      if (!isValidCalendarDate(value)) {
+        dateInput.setCustomValidity("Enter a real calendar date in the date picker.");
+        return;
+      }
+
+      if (value < today) {
+        dateInput.setCustomValidity("Appointment dates cannot be in the past.");
+        return;
+      }
+
+      dateInput.setCustomValidity("");
+    };
+
+    dateInput.addEventListener("input", validateDateInput);
+    dateInput.addEventListener("change", validateDateInput);
+    dateInput.addEventListener("blur", validateDateInput);
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>

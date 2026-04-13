@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clothing Selection | WDS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="logo-header">
+    <div class="site-mark" aria-label="WDS">WDS</div>
+    <h1>Select Your Items</h1>
+    <p>Choose what you are bringing in, and we will show you the pricing on the next screen.</p>
+  </header>
+
+  <nav class="main-nav">
+    <a href="/">Home</a>
+    <a href="/start-order" class="active">Start Order</a>
+    <a href="/faqs">FAQ</a>
+    <a href="/contact">Contact</a>
+    <a href="/login" data-auth-link>Login</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-card">
+      <span class="eyebrow">Item Selection</span>
+      <h2>Choose what needs cleaning</h2>
+      <p>Your quantities here will help us show you a clear subtotal, tax, and final total before you place the order.</p>
+
+      <form class="clothing-form" action="/review" method="get" id="clothingForm">
+        <input type="hidden" name="customerType" id="hiddenCustomerType">
+        <input type="hidden" name="fullName" id="hiddenFullName">
+        <input type="hidden" name="phone" id="hiddenPhone">
+        <input type="hidden" name="email" id="hiddenEmail">
+        <input type="hidden" name="service" id="hiddenService">
+        <input type="hidden" name="date" id="hiddenDate">
+        <input type="hidden" name="time" id="hiddenTime">
+        <input type="hidden" name="notes" id="hiddenNotes">
+
+        <div class="clothing-grid">
+          <div class="clothing-card clothing-photo-card item-shirts">
+            <span class="item-type">Shirts</span>
+            <h3>Shirts</h3>
+            <p>For your everyday tops, tees, and light button-downs.</p>
+            <div class="price-tag">$3.00 each</div>
+            <label for="shirts">Quantity</label>
+            <input type="number" id="shirts" name="shirts" min="0" value="0">
+          </div>
+
+          <div class="clothing-card clothing-photo-card item-pants">
+            <span class="item-type">Pants</span>
+            <h3>Pants</h3>
+            <p>For your slacks, dress pants, and similar everyday pieces.</p>
+            <div class="price-tag">$5.00 each</div>
+            <label for="pants">Quantity</label>
+            <input type="number" id="pants" name="pants" min="0" value="0">
+          </div>
+
+          <div class="clothing-card clothing-photo-card item-jackets">
+            <span class="item-type">Outerwear</span>
+            <h3>Jackets</h3>
+            <p>For jackets and outer layers you want cleaned and ready to wear again.</p>
+            <div class="price-tag">$6.00 each</div>
+            <label for="jackets">Quantity</label>
+            <input type="number" id="jackets" name="jackets" min="0" value="0">
+          </div>
+
+          <div class="clothing-card clothing-photo-card item-suits">
+            <span class="item-type">Formal</span>
+            <h3>Suits</h3>
+            <p>For suits and tailored pieces you want looking sharp.</p>
+            <div class="price-tag">$10.00 each</div>
+            <label for="suits">Quantity</label>
+            <input type="number" id="suits" name="suits" min="0" value="0">
+          </div>
+
+          <div class="clothing-card clothing-photo-card item-dresses">
+            <span class="item-type">Formal</span>
+            <h3>Dresses</h3>
+            <p>For dresses and pieces you would rather trust us to handle carefully.</p>
+            <div class="price-tag">$10.00 each</div>
+            <label for="dresses">Quantity</label>
+            <input type="number" id="dresses" name="dresses" min="0" value="0">
+          </div>
+
+          <div class="clothing-card clothing-photo-card item-bedsheets">
+            <span class="item-type">Household</span>
+            <h3>Bed Sheets</h3>
+            <p>For bedding and linen items you want cleaned without the hassle at home.</p>
+            <div class="price-tag">$8.00 each</div>
+            <label for="bedsheets">Quantity</label>
+            <input type="number" id="bedsheets" name="bedsheets" min="0" value="0">
+          </div>
+
+          <div class="clothing-card clothing-photo-card item-curtains">
+            <span class="item-type">Household</span>
+            <h3>Curtains</h3>
+            <p>For curtains and heavier fabric items that need a little extra room and care.</p>
+            <div class="price-tag">$12.00 each</div>
+            <label for="curtains">Quantity</label>
+            <input type="number" id="curtains" name="curtains" min="0" value="0">
+          </div>
+
+          <div class="clothing-card clothing-photo-card item-leather">
+            <span class="item-type">Special Care</span>
+            <h3>Leather Items</h3>
+            <p>For leather pieces that need more careful handling than a standard clean.</p>
+            <div class="price-tag">$15.00 each</div>
+            <label for="leather">Quantity</label>
+            <input type="number" id="leather" name="leather" min="0" value="0">
+          </div>
+
+          <div class="clothing-card clothing-photo-card item-other">
+            <span class="item-type">Custom</span>
+            <h3>Other Items</h3>
+            <p>If you have something unusual, add it here and we can review it with you later.</p>
+            <div class="price-tag">Quoted later</div>
+            <label for="other">Quantity</label>
+            <input type="number" id="other" name="other" min="0" value="0">
+          </div>
+        </div>
+
+        <div class="button-group" style="margin-top: 24px;">
+          <a href="#" id="backToAppointment" class="btn secondary-btn">Back</a>
+          <button class="btn" type="submit">Review Order</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <footer>
+    <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
+  </footer>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+
+    document.getElementById("hiddenCustomerType").value = params.get("customerType") || "guest";
+    document.getElementById("hiddenFullName").value = params.get("fullName") || "";
+    document.getElementById("hiddenPhone").value = params.get("phone") || "";
+    document.getElementById("hiddenEmail").value = params.get("email") || "";
+    document.getElementById("hiddenService").value = params.get("service") || "";
+    document.getElementById("hiddenDate").value = params.get("date") || "";
+    document.getElementById("hiddenTime").value = params.get("time") || "";
+    document.getElementById("hiddenNotes").value = params.get("notes") || "";
+
+    ["shirts", "pants", "jackets", "suits", "dresses", "bedsheets", "curtains", "leather", "other"].forEach((item) => {
+      const field = document.getElementById(item);
+      if (field) {
+        field.value = params.get(item) || "0";
+      }
+    });
+
+    document.getElementById("backToAppointment").href = "/appointment?" + params.toString();
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>

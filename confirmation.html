@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thank You | WDS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="confirmation-page">
+  <main class="thank-you-screen">
+    <div class="thank-you-popup" role="dialog" aria-labelledby="thankYouHeading" aria-describedby="thankYouMessage">
+      <span class="eyebrow">Order Confirmed</span>
+      <h1 id="thankYouHeading">Thank you</h1>
+      <p id="thankYouMessage">See you soon.</p>
+      <p class="redirect-note">Returning you to the main menu...</p>
+      <a href="/" class="btn">Back to Main Menu</a>
+    </div>
+  </main>
+
+  <script>
+    window.setTimeout(() => {
+      window.location.href = "/";
+    }, 3500);
+  </script>
+<script src="app.js"></script>
+</body>
+</html>

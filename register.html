@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account | WDS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="logo-header">
+    <div class="site-mark" aria-label="WDS">WDS</div>
+    <h1>Create Your Account</h1>
+    <p>Create an account so you can pay faster, earn rewards, and keep up with your orders more easily.</p>
+  </header>
+
+  <nav class="main-nav">
+    <a href="/">Home</a>
+    <a href="/start-order">Start Order</a>
+    <a href="/faqs">FAQ</a>
+    <a href="/contact">Contact</a>
+    <a href="/login" data-auth-link>Login</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-card">
+      <div class="split-hero">
+        <div class="hero-panel">
+          <span class="eyebrow">Account Setup</span>
+          <h2>Make your next visit easier on yourself</h2>
+          <p>Create your profile once, then come back to your wallet, order updates, and loyalty points each time you log in.</p>
+
+          <form action="/register" method="post" class="register-form" id="registerForm">
+            <input type="hidden" name="next" id="registerNext" value="dashboard">
+
+            <div class="form-grid">
+              <div class="field-group full">
+                <label for="fullName">Full Name</label>
+                <input id="fullName" name="fullName" type="text" placeholder="Enter your full name" required>
+              </div>
+
+              <div class="field-group">
+                <label for="phone">Phone Number</label>
+                <input id="phone" name="phone" type="tel" placeholder="(555) 123-4567" data-format="phone" required>
+              </div>
+
+              <div class="field-group">
+                <label for="email">Email Address</label>
+                <input id="email" name="email" type="email" placeholder="Enter your email" required>
+              </div>
+
+              <div class="field-group">
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" placeholder="Create a password" required>
+              </div>
+
+              <div class="field-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input id="confirmPassword" name="confirmPassword" type="password" placeholder="Confirm your password" required>
+              </div>
+            </div>
+
+            <div class="button-group" style="margin-top: 20px;">
+              <button type="submit" class="btn">Create Account</button>
+              <a href="/login" class="btn btn-outline" id="loginLink">Already Have an Account</a>
+            </div>
+          </form>
+        </div>
+
+        <div class="hero-highlight">
+          <div class="highlight-box">
+            <span class="detail-pill">Wallet</span>
+            <p>Add money to your account so paying next time feels quick and easy.</p>
+          </div>
+          <div class="highlight-box">
+            <span class="detail-pill">Loyalty</span>
+            <p>Earn 10 points each time we finish one of your paid orders.</p>
+          </div>
+          <div class="highlight-box">
+            <span class="detail-pill">Tracking</span>
+            <p>See your order status change as soon as we update it on our side.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
+  </footer>
+
+  <script>
+    const registerParams = new URLSearchParams(window.location.search);
+    const registerNext = registerParams.get("next") === "order" ? "order" : "dashboard";
+    document.getElementById("registerNext").value = registerNext;
+    document.getElementById("loginLink").href = `/login?next=${registerNext}`;
+
+    const registerForm = document.getElementById("registerForm");
+    const passwordField = document.getElementById("password");
+    const confirmPasswordField = document.getElementById("confirmPassword");
+
+    const validateMatchingPasswords = () => {
+      if (!confirmPasswordField.value) {
+        confirmPasswordField.setCustomValidity("Please confirm your password.");
+        return;
+      }
+
+      if (passwordField.value !== confirmPasswordField.value) {
+        confirmPasswordField.setCustomValidity("Passwords do not match.");
+        return;
+      }
+
+      confirmPasswordField.setCustomValidity("");
+    };
+
+    passwordField.addEventListener("input", validateMatchingPasswords);
+    confirmPasswordField.addEventListener("input", validateMatchingPasswords);
+    confirmPasswordField.addEventListener("blur", validateMatchingPasswords);
+
+    registerForm.addEventListener("submit", (event) => {
+      validateMatchingPasswords();
+
+      if (!registerForm.checkValidity()) {
+        event.preventDefault();
+        registerForm.reportValidity();
+      }
+    });
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guest Checkout | WDS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="logo-header">
+    <div class="site-mark" aria-label="WDS">WDS</div>
+    <h1>Guest Checkout</h1>
+    <p>A simple way to place your order without making an account.</p>
+  </header>
+
+  <nav class="main-nav">
+    <a href="/">Home</a>
+    <a href="/start-order" class="active">Start Order</a>
+    <a href="/faqs">FAQ</a>
+    <a href="/contact">Contact</a>
+    <a href="/login" data-auth-link>Login</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-card">
+      <span class="eyebrow">Guest Flow</span>
+      <h2>Continue without creating an account</h2>
+      <p>We only need your full name and phone number to get started. You will choose payment later, and if you pay by card as a guest, those card details are not saved.</p>
+
+      <form action="/appointment" method="get" class="appointment-form">
+        <input type="hidden" name="customerType" value="guest">
+
+        <div class="form-grid">
+          <div class="field-group full">
+            <label for="fullName">Full Name</label>
+            <input id="fullName" name="fullName" type="text" placeholder="Enter your full name" required>
+          </div>
+
+          <div class="field-group full">
+            <label for="phone">Phone Number</label>
+            <input id="phone" name="phone" type="tel" placeholder="(555) 123-4567" data-format="phone" required>
+          </div>
+        </div>
+
+        <div class="form-note">
+          Guest customers will receive a phone call when the order is ready for pickup.
+          Want wallet access and loyalty points later? You can still create an account before your next order.
+        </div>
+
+        <div class="button-group" style="margin-top: 20px;">
+          <button type="submit" class="btn">Continue to Appointment</button>
+          <a href="/register?next=order" class="btn btn-outline">Create Account Instead</a>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <footer>
+    <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
+  </footer>
+<script src="app.js"></script>
+</body>
+</html>

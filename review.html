@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Review Order | WDS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="logo-header">
+    <div class="site-mark" aria-label="WDS">WDS</div>
+    <h1>Review Your Order</h1>
+    <p>Take one last look at your details, your items, and how you would like to pay.</p>
+  </header>
+
+  <nav class="main-nav">
+    <a href="/">Home</a>
+    <a href="/start-order" class="active">Start Order</a>
+    <a href="/faqs">FAQ</a>
+    <a href="/contact">Contact</a>
+    <a href="/login" data-auth-link>Login</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-card">
+      <span class="eyebrow">Final Review</span>
+      <h2>Look everything over before you confirm</h2>
+      <p>The payment choices below change depending on whether you are checking out as a guest or through your account.</p>
+
+<form action="#" method="POST" class="contact-form" id="reviewForm">        
+        <input type="hidden" name="customerType" id="orderCustomerType">
+        <input type="hidden" name="fullName" id="orderFullName">
+        <input type="hidden" name="phone" id="orderPhone">
+        <input type="hidden" name="email" id="orderEmail">
+        <input type="hidden" name="service" id="orderService">
+        <input type="hidden" name="date" id="orderDate">
+        <input type="hidden" name="time" id="orderTime">
+        <input type="hidden" name="notes" id="orderNotes">
+        <input type="hidden" name="itemSummary" id="orderItems">
+        <input type="hidden" name="subtotal" id="orderSubtotal">
+        <input type="hidden" name="tax" id="orderTax">
+        <input type="hidden" name="total" id="orderTotal">
+        <input type="hidden" name="orderStatus" value="Started">
+        <input type="hidden" name="shirts" id="orderShirts">
+        <input type="hidden" name="pants" id="orderPants">
+        <input type="hidden" name="jackets" id="orderJackets">
+        <input type="hidden" name="suits" id="orderSuits">
+        <input type="hidden" name="dresses" id="orderDresses">
+        <input type="hidden" name="bedsheets" id="orderBedsheets">
+        <input type="hidden" name="curtains" id="orderCurtains">
+        <input type="hidden" name="leather" id="orderLeather">
+        <input type="hidden" name="other" id="orderOther">
+
+        <div class="review-stack">
+          <div class="review-section">
+            <h3>Customer Details</h3>
+            <div class="review-row"><strong>Customer Type</strong><span id="reviewCustomerType"></span></div>
+            <div class="review-row"><strong>Full Name</strong><span id="reviewName"></span></div>
+            <div class="review-row"><strong>Phone Number</strong><span id="reviewPhone"></span></div>
+            <div class="review-row"><strong>Email</strong><span id="reviewEmail"></span></div>
+          </div>
+
+          <div class="review-section">
+            <h3>Appointment Details</h3>
+            <div class="review-row"><strong>Service</strong><span id="reviewService"></span></div>
+            <div class="review-row"><strong>Date</strong><span id="reviewDate"></span></div>
+            <div class="review-row"><strong>Time</strong><span id="reviewTime"></span></div>
+            <div class="review-row"><strong>Notes</strong><span id="reviewNotes"></span></div>
+          </div>
+
+          <div class="review-section">
+            <h3>Selected Items</h3>
+            <div id="reviewItems"></div>
+          </div>
+
+          <div class="review-section totals-box">
+            <h3>Totals</h3>
+            <p><strong>Subtotal:</strong> $<span id="subtotal">0.00</span></p>
+            <p><strong>Estimated Tax (5%):</strong> $<span id="tax">0.00</span></p>
+            <p><strong>Total:</strong> $<span id="total">0.00</span></p>
+          </div>
+
+          <div class="review-section">
+            <h3>Payment Method</h3>
+            <p id="paymentIntro">Choose how this order should be paid.</p>
+
+            <div id="paymentOptions" class="payment-options"></div>
+            <div id="paymentHint" class="payment-hint hidden"></div>
+          </div>
+        </div>
+
+        <div class="button-group" style="margin-top: 24px;">
+          <a href="#" id="backToClothing" class="btn secondary-btn">Back</a>
+          <button class="btn" type="submit">Confirm Order</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <footer>
+    <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
+  </footer>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+
+    const prices = {
+      shirts: 3.0,
+      pants: 5.0,
+      jackets: 6.0,
+      suits: 10.0,
+      dresses: 10.0,
+      bedsheets: 8.0,
+      curtains: 12.0,
+      leather: 15.0,
+      other: 0.0
+    };
+
+    const labels = {
+      shirts: "T-Shirts and Shirts",
+      pants: "Pants",
+      jackets: "Jackets",
+      suits: "Suits",
+      dresses: "Dresses",
+      bedsheets: "Bed Sheets",
+      curtains: "Curtains",
+      leather: "Leather Items",
+      other: "Other Items"
+    };
+
+    const customerType = params.get("customerType") || "guest";
+    const fullName = params.get("fullName") || "N/A";
+    const phone = params.get("phone") || "N/A";
+    const email = params.get("email") || "Not provided";
+    const service = params.get("service") || "N/A";
+    const date = params.get("date") || "N/A";
+    const time = params.get("time") || "N/A";
+    const notes = params.get("notes") || "None";
+    const selectedPayment = params.get("paymentMethod") || "";
+
+    document.getElementById("reviewCustomerType").textContent = customerType === "registered" ? "Registered Customer" : "Guest";
+    document.getElementById("reviewName").textContent = fullName;
+    document.getElementById("reviewPhone").textContent = phone;
+    document.getElementById("reviewEmail").textContent = email;
+    document.getElementById("reviewService").textContent = service;
+    document.getElementById("reviewDate").textContent = date;
+    document.getElementById("reviewTime").textContent = time;
+    document.getElementById("reviewNotes").textContent = notes;
+
+    document.getElementById("orderCustomerType").value = customerType;
+    document.getElementById("orderFullName").value = fullName;
+    document.getElementById("orderPhone").value = phone;
+    document.getElementById("orderEmail").value = email === "Not provided" ? "" : email;
+    document.getElementById("orderService").value = service;
+    document.getElementById("orderDate").value = date;
+    document.getElementById("orderTime").value = time;
+    document.getElementById("orderNotes").value = notes === "None" ? "" : notes;
+
+    let subtotal = 0;
+    const itemSummary = [];
+    const reviewItems = document.getElementById("reviewItems");
+
+    Object.keys(prices).forEach((key) => {
+      const qty = parseInt(params.get(key) || "0", 10);
+      const hiddenField = document.getElementById(`order${key.charAt(0).toUpperCase()}${key.slice(1)}`);
+
+      if (hiddenField) {
+        hiddenField.value = qty > 0 ? String(qty) : "0";
+      }
+
+      if (qty > 0) {
+        const itemTotal = qty * prices[key];
+        subtotal += itemTotal;
+
+        const itemRow = document.createElement("div");
+        itemRow.className = "review-row";
+        itemRow.innerHTML = `<strong>${labels[key]}</strong><span>${qty} x $${prices[key].toFixed(2)} = $${itemTotal.toFixed(2)}</span>`;
+        reviewItems.appendChild(itemRow);
+
+        itemSummary.push(`${labels[key]}: ${qty} x $${prices[key].toFixed(2)} = $${itemTotal.toFixed(2)}`);
+      }
+    });
+
+    if (!itemSummary.length) {
+      const emptyRow = document.createElement("div");
+      emptyRow.className = "review-row";
+      emptyRow.innerHTML = "<strong>No items selected</strong><span>Add quantities on the previous step.</span>";
+      reviewItems.appendChild(emptyRow);
+    }
+
+    const tax = subtotal * 0.05;
+    const total = subtotal + tax;
+
+    document.getElementById("subtotal").textContent = subtotal.toFixed(2);
+    document.getElementById("tax").textContent = tax.toFixed(2);
+    document.getElementById("total").textContent = total.toFixed(2);
+
+    document.getElementById("orderItems").value = itemSummary.join(" | ");
+    document.getElementById("orderSubtotal").value = subtotal.toFixed(2);
+    document.getElementById("orderTax").value = tax.toFixed(2);
+    document.getElementById("orderTotal").value = total.toFixed(2);
+
+    document.getElementById("backToClothing").href = "/clothing?" + params.toString();
+
+    const paymentOptions = document.getElementById("paymentOptions");
+    const paymentHint = document.getElementById("paymentHint");
+    const paymentIntro = document.getElementById("paymentIntro");
+
+    const options = customerType === "registered"
+      ? [
+          { value: "wallet", title: "Pay with Wallet", description: "Use the balance already sitting in your wallet so checkout stays quick." },
+          { value: "saved-card", title: "Use Saved Card", description: "Use the payment method you already keep on file." },
+          { value: "new-card", title: "Use a New Card", description: "Enter card details for this order and choose later if you want them saved." },
+          { value: "cash", title: "Pay with Cash", description: "Pay in person when you come by." }
+        ]
+      : [
+          { value: "card", title: "Pay by Card", description: "Use a card for this one order only. Your guest card details are not saved." },
+          { value: "cash", title: "Pay with Cash", description: "Pay in person when you drop off or pick up your order." }
+        ];
+
+    paymentIntro.textContent = customerType === "registered"
+      ? "If you are using your account, you can pay with wallet funds, a saved card, a new card, or cash."
+      : "If you are checking out as a guest, you can pay by card for this order only or choose cash. We will call you when your order is ready for pickup.";
+
+    options.forEach((option, index) => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "payment-option";
+
+      const detailsId = `details-${option.value}`;
+      const checked = selectedPayment
+        ? (option.value === selectedPayment ? "checked" : "")
+        : (index === 0 ? "checked" : "");
+
+      let details = "";
+
+      if (option.value === "new-card" || option.value === "card") {
+        details = `
+          <div class="payment-details ${(selectedPayment ? option.value === selectedPayment : index === 0) ? "active" : ""}" id="${detailsId}">
+            <div class="form-grid">
+              <div class="field-group full">
+                <label for="cardholderName">Cardholder Name</label>
+                <input id="cardholderName" name="cardholderName" type="text" placeholder="Name on card">
+              </div>
+              <div class="field-group full">
+                <label for="cardNumber">Card Number</label>
+                <input id="cardNumber" name="cardNumber" type="text" placeholder="1234 5678 9012 3456" data-format="card">
+              </div>
+              <div class="field-group">
+                <label for="expiry">Expiration</label>
+                <input id="expiry" name="expiry" type="text" placeholder="MM/YY" data-format="expiry">
+              </div>
+              <div class="field-group">
+                <label for="cvv">CVV</label>
+                <input id="cvv" name="cvv" type="text" placeholder="123" data-format="cvv">
+              </div>
+            </div>
+            ${customerType === "registered" ? `
+            <div class="checkbox-row" style="margin-top: 14px;">
+              <input type="checkbox" id="savePaymentMethod" name="savePaymentMethod" value="yes">
+              <label for="savePaymentMethod">Save this payment method to the account later through a secure tokenized setup.</label>
+            </div>
+            ` : ""}
+          </div>
+        `;
+      }
+
+      wrapper.innerHTML = `
+        <label>
+          <input type="radio" name="paymentMethod" value="${option.value}" ${checked}>
+          <span>
+            <strong>${option.title}</strong><br>
+            ${option.description}
+          </span>
+        </label>
+        ${details}
+      `;
+
+      paymentOptions.appendChild(wrapper);
+    });
+
+    const updatePaymentState = () => {
+      const selected = document.querySelector('input[name="paymentMethod"]:checked');
+      const selectedValue = selected ? selected.value : "";
+
+      document.querySelectorAll(".payment-details").forEach((panel) => {
+        panel.classList.remove("active");
+      });
+
+      const activePanel = document.getElementById(`details-${selectedValue}`);
+      if (activePanel) {
+        activePanel.classList.add("active");
+      }
+
+      paymentHint.classList.remove("hidden");
+
+      if (selectedValue === "wallet") {
+        paymentHint.textContent = "Later, this will pull from your wallet balance automatically once the backend is connected.";
+      } else if (selectedValue === "saved-card") {
+        paymentHint.textContent = "Later, your saved card should be charged through a secure stored token, not the raw card number.";
+      } else if (selectedValue === "cash") {
+        paymentHint.textContent = "If you choose cash, your order should still be saved so we can update the payment status later.";
+      } else {
+        paymentHint.textContent = "These card fields are placeholders for now. Guest card details are one-time use, and account holders can later choose whether to save a tokenized payment method.";
+      }
+    };
+
+    document.addEventListener("change", (event) => {
+      if (event.target && event.target.name === "paymentMethod") {
+        updatePaymentState();
+      }
+    });
+
+    updatePaymentState();
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>

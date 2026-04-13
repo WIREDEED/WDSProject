@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account | WDS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="logo-header">
+    <div class="site-mark" aria-label="WDS">WDS</div>
+    <h1>Manage Account</h1>
+    <p>Update your information, choose how you want to hear from us, and manage your saved payment settings.</p>
+  </header>
+
+  <nav class="main-nav">
+    <a href="/">Home</a>
+    <a href="/start-order">Start Order</a>
+    <a href="/faqs">FAQ</a>
+    <a href="/contact">Contact</a>
+    <a href="/dashboard" data-auth-link>Dashboard</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-card">
+      <form class="account-form" action="/account" method="post">
+        <div class="account-grid">
+          <div class="account-panel">
+            <span class="eyebrow">Profile</span>
+            <h2>Your information</h2>
+
+            <div class="form-grid">
+              <div class="field-group full">
+                <label for="accountName">Full Name</label>
+                <input id="accountName" name="accountName" type="text" value="">
+              </div>
+
+              <div class="field-group">
+                <label for="accountPhone">Phone Number</label>
+                <input id="accountPhone" name="accountPhone" type="tel" value="" data-format="phone">
+              </div>
+
+              <div class="field-group">
+                <label for="accountEmail">Email Address</label>
+                <input id="accountEmail" name="accountEmail" type="email" value="">
+              </div>
+
+              <div class="field-group full">
+                <label for="accountPassword">Update Password</label>
+                <input id="accountPassword" name="accountPassword" type="password" placeholder="Enter a new password if needed">
+              </div>
+            </div>
+          </div>
+
+          <div class="account-panel">
+            <span class="eyebrow">Preferences</span>
+            <h2>Payment and notifications</h2>
+
+            <div class="ledger-list">
+              <div class="ledger-item">
+                <div>
+                  <strong>Saved Payment Method</strong>
+                  <p id="savedPaymentDescription">No saved payment method yet.</p>
+                </div>
+                <span class="detail-pill" id="savedPaymentStatus">None</span>
+              </div>
+
+              <div class="ledger-item">
+                <div>
+                  <strong>Wallet Balance</strong>
+                  <p>Available for faster future payments</p>
+                </div>
+                <span class="detail-pill" id="accountWalletBalance">$0.00</span>
+              </div>
+
+              <div class="ledger-item">
+                <div>
+                  <strong>Loyalty Points</strong>
+                  <p>You start at 0 and earn 10 points for each completed purchase.</p>
+                </div>
+                <span class="detail-pill" id="accountLoyaltyPoints">0 pts</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 18px;">
+              <div class="checkbox-row">
+                <input id="textUpdates" name="textUpdates" type="checkbox" checked>
+                <label for="textUpdates">Send text updates when an order moves to In Progress, Ready for Pickup, or Completed.</label>
+              </div>
+              <div class="checkbox-row" style="margin-top: 12px;">
+                <input id="emailUpdates" name="emailUpdates" type="checkbox" checked>
+                <label for="emailUpdates">Send email summaries for order confirmations and wallet activity.</label>
+              </div>
+              <div class="checkbox-row" style="margin-top: 12px;">
+                <input id="allowSavedCard" name="allowSavedCard" type="checkbox" checked>
+                <label for="allowSavedCard">Allow future orders to use a saved tokenized card on file.</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-group" style="margin-top: 20px;">
+          <button class="btn" type="submit">Save Account Settings</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <footer>
+    <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
+  </footer>
+  <script>
+    const accountParams = new URLSearchParams(window.location.search);
+
+    if (accountParams.get("success") === "1") {
+      const successNote = document.createElement("div");
+      successNote.className = "form-note";
+      successNote.textContent = "Your account changes were saved.";
+      document.querySelector(".hero-card")?.prepend(successNote);
+    }
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>
