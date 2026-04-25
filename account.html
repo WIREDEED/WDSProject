@@ -92,22 +92,22 @@
 
                 <div class="field-group full">
                   <label for="cardNumber">Card Number</label>
-                  <input id="cardNumber" name="cardNumber" type="text" placeholder="1234 5678 9012 3456" autocomplete="cc-number" inputmode="numeric">
+                  <input id="cardNumber" name="cardNumber" type="text" placeholder="1234 5678 9012 3456" autocomplete="cc-number" inputmode="numeric" data-format="card">
                 </div>
 
                 <div class="field-group">
                   <label for="expiry">Expiry</label>
-                  <input id="expiry" name="expiry" type="text" placeholder="MM/YY" autocomplete="cc-exp">
+                  <input id="expiry" name="expiry" type="text" placeholder="MM/YY" autocomplete="cc-exp" data-format="expiry">
                 </div>
 
                 <div class="field-group">
                   <label for="cvv">CVV</label>
-                  <input id="cvv" name="cvv" type="password" placeholder="123" autocomplete="cc-csc" inputmode="numeric">
+                  <input id="cvv" name="cvv" type="password" placeholder="123" autocomplete="cc-csc" inputmode="numeric" data-format="cvv">
                 </div>
               </div>
               <p class="saved-card-note">Only a demo token and the card ending are saved for this project.</p>
               <div class="button-group" style="margin-top: 16px;">
-                <button class="btn" type="button" id="saveNewCard">Save Card</button>
+                <button class="btn" type="submit" id="saveNewCard" name="accountCardAction" value="save-card">Save Card</button>
               </div>
             </div>
 
