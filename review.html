@@ -10,6 +10,25 @@
     .tier-btn { flex: 1; min-width: 120px; padding: 10px; border: 2px solid #ddd; background: white; cursor: pointer; border-radius: 6px; font-weight: bold; }
     .tier-btn.selected-tier { background: #000; color: #fff; border-color: #000; }
     .loyalty-discount-options { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc; }
+    .review-item-row { align-items: center; gap: 16px; }
+    .review-item-summary { display: flex; flex-direction: column; gap: 4px; }
+    .review-item-total { color: #234b86; font-weight: 600; }
+    .review-item-controls { display: inline-flex; align-items: center; gap: 10px; }
+    .quantity-btn {
+      width: 32px;
+      height: 32px;
+      border: 1px solid #c7d8f2;
+      border-radius: 999px;
+      background: #fff;
+      color: #234b86;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .quantity-btn:hover { background: #eef4ff; }
+    .quantity-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .quantity-value { min-width: 24px; text-align: center; font-weight: 700; color: #234b86; }
   </style>
 </head>
 <body>
@@ -168,59 +187,92 @@
     document.getElementById("orderTime").value = time;
     document.getElementById("orderNotes").value = notes === "None" ? "" : notes;
 
-    let subtotal = 0;
-    const itemSummary = [];
     const reviewItems = document.getElementById("reviewItems");
+    const quantities = {};
 
     Object.keys(prices).forEach((key) => {
-      const qty = parseInt(params.get(key) || "0", 10);
-      const hiddenField = document.getElementById(`order${key.charAt(0).toUpperCase()}${key.slice(1)}`);
-
-      if (hiddenField) {
-        hiddenField.value = qty > 0 ? String(qty) : "0";
-      }
-
-      if (qty > 0) {
-        const itemTotal = qty * prices[key];
-        subtotal += itemTotal;
-
-        const itemRow = document.createElement("div");
-        itemRow.className = "review-row";
-        itemRow.innerHTML = `<strong>${labels[key]}</strong><span>${qty} x $${prices[key].toFixed(2)} = $${itemTotal.toFixed(2)}</span>`;
-        reviewItems.appendChild(itemRow);
-
-        itemSummary.push(`${labels[key]}: ${qty} x $${prices[key].toFixed(2)} = $${itemTotal.toFixed(2)}`);
-      }
+      quantities[key] = parseInt(params.get(key) || "0", 10);
     });
 
-    if (!itemSummary.length) {
-      const emptyRow = document.createElement("div");
-      emptyRow.className = "review-row";
-      emptyRow.innerHTML = "<strong>No items selected</strong><span>Add quantities on the previous step.</span>";
-      reviewItems.appendChild(emptyRow);
-    }
+    const syncQuantityFields = () => {
+      Object.keys(prices).forEach((key) => {
+        const hiddenField = document.getElementById(`order${key.charAt(0).toUpperCase()}${key.slice(1)}`);
+        if (hiddenField) {
+          hiddenField.value = String(quantities[key] || 0);
+        }
+      });
+    };
 
-    const tax = subtotal * 0.05;
-    const total = subtotal + tax;
+    const updateReviewQueryState = () => {
+      Object.keys(prices).forEach((key) => {
+        params.set(key, String(quantities[key] || 0));
+      });
 
-    document.getElementById("subtotal").textContent = subtotal.toFixed(2);
-    document.getElementById("tax").textContent = tax.toFixed(2);
-    document.getElementById("total").textContent = total.toFixed(2);
-    document.getElementById("finalTotal").textContent = total.toFixed(2);
+      const reviewUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState({}, "", reviewUrl);
+      document.getElementById("backToClothing").href = "/clothing?" + params.toString();
+    };
 
-    // Calculate 10% of the subtotal (rounded down) for the preview display
-    const loyaltyPoints = customerType === "registered" && itemSummary.length ? Math.floor(subtotal * 0.10) : 0;
-    
-    document.getElementById("loyaltyPointsPreview").textContent = customerType === "registered"
-      ? `+${loyaltyPoints} pts (Earned on this order)`
-      : "0 pts - log in or create an account to earn points";
+    const renderItems = () => {
+      let subtotal = 0;
+      const itemSummary = [];
+      reviewItems.innerHTML = "";
 
-    document.getElementById("orderItems").value = itemSummary.join(" | ");
-    document.getElementById("orderSubtotal").value = subtotal.toFixed(2);
-    document.getElementById("orderTax").value = tax.toFixed(2);
-    document.getElementById("orderTotal").value = total.toFixed(2);
+      Object.keys(prices).forEach((key) => {
+        const qty = quantities[key] || 0;
 
-    document.getElementById("backToClothing").href = "/clothing?" + params.toString();
+        if (qty > 0) {
+          const itemTotal = qty * prices[key];
+          subtotal += itemTotal;
+
+          const itemRow = document.createElement("div");
+          itemRow.className = "review-row review-item-row";
+          itemRow.innerHTML = `
+            <div class="review-item-summary">
+              <strong>${labels[key]}</strong>
+              <span class="review-item-total">${qty} x $${prices[key].toFixed(2)} = $${itemTotal.toFixed(2)}</span>
+            </div>
+            <div class="review-item-controls" aria-label="Adjust ${labels[key]} quantity">
+              <button type="button" class="quantity-btn" data-item="${key}" data-change="-1" ${qty <= 0 ? "disabled" : ""}>-</button>
+              <span class="quantity-value">${qty}</span>
+              <button type="button" class="quantity-btn" data-item="${key}" data-change="1">+</button>
+            </div>
+          `;
+          reviewItems.appendChild(itemRow);
+
+          itemSummary.push(`${labels[key]}: ${qty} x $${prices[key].toFixed(2)} = $${itemTotal.toFixed(2)}`);
+        }
+      });
+
+      if (!itemSummary.length) {
+        const emptyRow = document.createElement("div");
+        emptyRow.className = "review-row";
+        emptyRow.innerHTML = "<strong>No items selected</strong><span>Add quantities on the previous step.</span>";
+        reviewItems.appendChild(emptyRow);
+      }
+
+      const tax = subtotal * 0.05;
+      const total = subtotal + tax;
+      const loyaltyPoints = customerType === "registered" && itemSummary.length ? Math.floor(subtotal * 0.10) : 0;
+
+      document.getElementById("subtotal").textContent = subtotal.toFixed(2);
+      document.getElementById("tax").textContent = tax.toFixed(2);
+      document.getElementById("total").textContent = total.toFixed(2);
+      document.getElementById("finalTotal").textContent = total.toFixed(2);
+      document.getElementById("loyaltyPointsPreview").textContent = customerType === "registered"
+        ? `+${loyaltyPoints} pts (Earned on this order)`
+        : "0 pts - log in or create an account to earn points";
+
+      document.getElementById("orderItems").value = itemSummary.join(" | ");
+      document.getElementById("orderSubtotal").value = subtotal.toFixed(2);
+      document.getElementById("orderTax").value = tax.toFixed(2);
+      document.getElementById("orderTotal").value = total.toFixed(2);
+      document.dispatchEvent(new CustomEvent("review-totals-updated"));
+    };
+
+    syncQuantityFields();
+    updateReviewQueryState();
+    renderItems();
 
     const paymentOptions = document.getElementById("paymentOptions");
     const paymentHint = document.getElementById("paymentHint");
@@ -324,6 +376,23 @@
       if (event.target && event.target.name === "paymentMethod") {
         updatePaymentState();
       }
+    });
+
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+
+      const button = target.closest(".quantity-btn");
+      if (!(button instanceof HTMLButtonElement)) return;
+
+      const itemKey = button.dataset.item;
+      const changeAmount = parseInt(button.dataset.change || "0", 10);
+      if (!itemKey || !Object.prototype.hasOwnProperty.call(quantities, itemKey) || Number.isNaN(changeAmount)) return;
+
+      quantities[itemKey] = Math.max(0, (quantities[itemKey] || 0) + changeAmount);
+      syncQuantityFields();
+      updateReviewQueryState();
+      renderItems();
     });
 
     updatePaymentState();

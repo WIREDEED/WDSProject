@@ -552,8 +552,6 @@ export const bindReviewForm = (supabase, sessionState, showToast) => {
         guestOrderId = guest.guest_order_id;
       }
 
-      // SILENT SUCCESS LOGIC: 
-      // We wrap the insertion in logic that ignores the 'unique_order_prevention' error.
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -568,32 +566,14 @@ export const bindReviewForm = (supabase, sessionState, showToast) => {
           payment_status: paymentMethod === "cash" ? "Pending" : "Paid",
           subtotal: subtotal,
           tax: tax,
-          total: total 
+          total: total // Let the database RPC apply the discount math!
         })
         .select("order_id")
         .single();
 
-      let orderId = order?.order_id;
+      if (orderError) throw orderError;
 
-      if (orderError) {
-        // If it's the duplicate order prevention error, find the one already in the DB
-        if (orderError.message.includes("unique_order_prevention")) {
-          const { data: existingOrder } = await supabase
-            .from("orders")
-            .select("order_id")
-            .eq("user_id", userId)
-            .eq("appointment_date", date)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .single();
-          
-          orderId = existingOrder?.order_id;
-        } else {
-          throw orderError;
-        }
-      }
-
-      if (!orderId) throw new Error("Could not retrieve order details.");
+      const orderId = order.order_id;
 
       const { error: itemsError } = await supabase.from("order_items").insert(
         items.map((item) => ({
@@ -605,8 +585,7 @@ export const bindReviewForm = (supabase, sessionState, showToast) => {
         }))
       );
 
-      // We ignore item duplicates too in case items already exists
-      if (itemsError && !itemsError.message.includes("duplicate key")) throw itemsError;
+      if (itemsError) throw itemsError;
 
       const { error: statusError } = await supabase.from("status_updates").insert({
         order_id: orderId,
@@ -615,18 +594,23 @@ export const bindReviewForm = (supabase, sessionState, showToast) => {
         updated_by: customerType === "registered" ? "Customer Account" : "Guest Checkout"
       });
 
-      if (statusError && !statusError.message.includes("duplicate key")) throw statusError;
+      if (statusError) throw statusError;
 
       if (customerType === "registered" && sessionState.profile) {
         
+        // 1. If they used a discount, trigger the secure backend RPC!
         if (discountTier) {
-          // RPC is already protected against duplicates on the DB side
-          await supabase.rpc('spend_loyalty_points', {
+          const { error: rpcError } = await supabase.rpc('spend_loyalty_points', {
             p_user_id: userId,
             p_order_id: orderId,
             p_points: discountTier.points
           });
+
+          if (rpcError) throw rpcError;
         }
+
+        // 2. No "earn points" code here! 
+        // Your database trigger (trg_earn_points_on_insert) will automatically add the 10% 
 
         if (paymentMethod === "new-card" && formData.get("savePaymentMethod") === "yes" && cardDetails) {
           await createSavedCardRecord(supabase, userId, cardDetails.cardNumber);
