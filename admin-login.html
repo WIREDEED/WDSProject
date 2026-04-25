@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login | WDS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="logo-header">
+    <div class="site-mark" aria-label="WDS">WDS</div>
+    <h1>Admin Access</h1>
+    <p>Use your admin email and password to access the WDS staff tools.</p>
+  </header>
+
+  <nav class="main-nav">
+    <a href="/">Home</a>
+    <a href="/start-order">Start Order</a>
+    <a href="/faqs">FAQ</a>
+    <a href="/contact">Contact</a>
+    <a href="/login">Login</a>
+    <a href="/admin-login" class="active">Admin</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-card">
+      <div class="split-hero">
+        <div class="hero-panel">
+          <span class="eyebrow">Staff Portal</span>
+          <h2>Log in as an administrator</h2>
+          <p>Enter your admin credentials below to continue to the admin side of the site.</p>
+
+          <form action="#" method="post" class="login-form" id="adminLoginForm">
+            <div class="form-grid">
+              <div class="field-group full">
+                <label for="adminEmail">Admin Email</label>
+                <input id="adminEmail" name="adminEmail" type="email" placeholder="Enter admin email" required>
+              </div>
+
+              <div class="field-group full">
+                <label for="adminPassword">Password</label>
+                <input id="adminPassword" name="adminPassword" type="password" placeholder="Enter admin password" required>
+              </div>
+            </div>
+
+            <div class="button-group" style="margin-top: 20px;">
+              <button type="submit" class="btn">Admin Log In</button>
+              <a href="/login" class="btn btn-outline">Back to Customer Login</a>
+            </div>
+          </form>
+        </div>
+
+        <div class="hero-highlight">
+          <div class="highlight-box">
+            <span class="detail-pill">Admin Only</span>
+            <p>This page is meant for WDS administrators handling staff-side tools and management tasks.</p>
+          </div>
+          <div class="highlight-box">
+            <span class="detail-pill">Secure Access</span>
+            <p>Use your assigned admin email and password to sign in before making updates.</p>
+          </div>
+          <div class="highlight-box">
+            <span class="detail-pill">Customer Access</span>
+            <p>If you are a customer, return to the normal login page to reach your dashboard and order updates.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
