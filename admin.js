@@ -211,7 +211,8 @@ const state = {
   searchTerm: "",
   searchColumn: "all",
   isCreating: false,
-  relationOptions: {}
+  relationOptions: {},
+  isLocalAdminMode: false
 };
 
 const getConfig = () => TABLE_CONFIG[state.currentTable];
@@ -522,7 +523,11 @@ const renderTableMeta = () => {
   const description = document.getElementById("adminTableDescription");
   const portalCount = document.getElementById("adminTableCount");
 
-  if (description) description.textContent = getConfig().description;
+  if (description) {
+    description.textContent = state.isLocalAdminMode
+      ? "Local admin mode is active. The portal UI works locally, but database edits still depend on your Supabase table permissions and policies."
+      : getConfig().description;
+  }
   if (portalCount) portalCount.textContent = `${Object.keys(TABLE_CONFIG).length} tables configured`;
 };
 
@@ -767,6 +772,7 @@ export const initAdminPortal = async (supabase, sessionState, showToast = fallba
     initialized = true;
   }
 
+  state.isLocalAdminMode = Boolean(sessionState.adminProfile?.isLocalFallback);
   state.currentTable = tableSelect?.value || state.currentTable;
   renderAll();
   await loadTableRows(supabase, showToast);
