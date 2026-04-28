@@ -30,7 +30,7 @@
           <h2>Log in as an administrator</h2>
           <p>Enter your admin credentials below to continue to the admin side of the site.</p>
 
-          <form action="#" method="post" class="login-form" id="adminLoginForm">
+          <form action="javascript:void(0)" method="post" class="login-form" id="adminLoginForm">
             <div class="form-grid">
               <div class="field-group full">
                 <label for="adminEmail">Admin Email</label>
@@ -77,6 +77,32 @@
     <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
   </footer>
 
+  <script>
+    (() => {
+      const form = document.getElementById("adminLoginForm");
+      if (!form) return;
+
+      form.addEventListener("submit", (event) => {
+        const formData = new FormData(form);
+        const email = String(formData.get("adminEmail") || "").trim().toLowerCase();
+        const password = String(formData.get("adminPassword") || "");
+        const pin = String(formData.get("adminPin") || "").trim();
+
+        if (
+          email === "wbdprojectumb@gmail.com" &&
+          password === "Wash123!" &&
+          pin === "1111"
+        ) {
+          event.preventDefault();
+          window.sessionStorage.setItem("wds_local_admin_verified", "wbdprojectumb@gmail.com");
+          window.location.href = "admin-portal.html";
+          return;
+        }
+
+        event.preventDefault();
+      });
+    })();
+  </script>
   <script src="app.js"></script>
 </body>
 </html>

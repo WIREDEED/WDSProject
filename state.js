@@ -97,7 +97,13 @@ export const getAdminProfile = async (supabase, authUserId) => {
     .maybeSingle();
 
   if (error) {
-    if (error.code === "42P01" || String(error.message || "").toLowerCase().includes("admin_users")) {
+    const message = String(error.message || "").toLowerCase();
+    if (
+      error.code === "42P01" ||
+      error.code === "42501" ||
+      message.includes("admin_users") ||
+      message.includes("permission denied")
+    ) {
       return null;
     }
 
