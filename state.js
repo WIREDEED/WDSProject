@@ -12,6 +12,9 @@ export const LOCAL_ADMIN_CREDENTIALS = {
   role: "Administrator"
 };
 
+const isConfiguredAdminEmail = (email) =>
+  String(email || "").trim().toLowerCase() === LOCAL_ADMIN_CREDENTIALS.email.toLowerCase();
+
 export const getProtectedPageType = () => {
   const fileName = getCurrentFileName();
 
@@ -238,6 +241,7 @@ export const getSessionState = async (supabase) => {
   }
 
   const adminProfile = await getAdminProfile(supabase, session.user.id);
+  const emailAdminFallback = isConfiguredAdminEmail(session.user.email);
   let profile = null;
   let savedPayment = null;
 
@@ -260,7 +264,7 @@ export const getSessionState = async (supabase) => {
   return {
     loggedIn: true,
     authUser: session.user,
-    isAdmin: Boolean(adminProfile),
+    isAdmin: Boolean(adminProfile || emailAdminFallback),
     adminProfile: adminProfile
       ? {
           adminId: adminProfile.admin_id,
@@ -270,7 +274,17 @@ export const getSessionState = async (supabase) => {
           pinCode: adminProfile.pin_code,
           role: adminProfile.role || "Administrator"
         }
-      : null,
+      : emailAdminFallback
+        ? {
+            adminId: "configured-admin",
+            authUserId: session.user.id,
+            fullName: session.user.user_metadata?.full_name || "WDS Admin",
+            email: session.user.email || LOCAL_ADMIN_CREDENTIALS.email,
+            pinCode: LOCAL_ADMIN_CREDENTIALS.pin,
+            role: LOCAL_ADMIN_CREDENTIALS.role,
+            isLocalFallback: true
+          }
+        : null,
     adminVerified: hasAdminPortalVerification(session.user.id),
     profile: buildProfileState(profile),
     savedPayment

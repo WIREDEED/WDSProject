@@ -52,12 +52,28 @@
         <div class="admin-filter-stack">
           <div class="field-group">
             <label for="adminTableSelect">Database Table</label>
-            <select id="adminTableSelect"></select>
+            <select id="adminTableSelect">
+              <option value="users">Users</option>
+              <option value="orders">Orders</option>
+              <option value="order_items">Order Items</option>
+              <option value="status_updates">Status Updates</option>
+              <option value="guest_orders">Guest Orders</option>
+              <option value="wallet_transactions">Wallet Transactions</option>
+              <option value="loyalty_transactions">Loyalty Transactions</option>
+              <option value="saved_payment_methods">Saved Payment Methods</option>
+              <option value="admin_users">Admin Users</option>
+            </select>
           </div>
 
           <div class="field-group">
             <label for="adminSearchColumn">Search Scope</label>
-            <select id="adminSearchColumn"></select>
+            <select id="adminSearchColumn">
+              <option value="all">All searchable columns</option>
+              <option value="user_id">User ID</option>
+              <option value="full_name">Full Name</option>
+              <option value="email">Email</option>
+              <option value="phone">Phone</option>
+            </select>
           </div>
 
           <div class="field-group">

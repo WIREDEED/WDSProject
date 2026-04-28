@@ -49,7 +49,7 @@
             </div>
 
             <div class="button-group" style="margin-top: 20px;">
-              <button type="submit" class="btn">Admin Log In</button>
+              <button type="submit" class="btn" id="adminLoginButton">Admin Log In</button>
               <a href="/login" class="btn btn-outline">Back to Customer Login</a>
             </div>
           </form>
@@ -77,32 +77,6 @@
     <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
   </footer>
 
-  <script>
-    (() => {
-      const form = document.getElementById("adminLoginForm");
-      if (!form) return;
-
-      form.addEventListener("submit", (event) => {
-        const formData = new FormData(form);
-        const email = String(formData.get("adminEmail") || "").trim().toLowerCase();
-        const password = String(formData.get("adminPassword") || "");
-        const pin = String(formData.get("adminPin") || "").trim();
-
-        if (
-          email === "wbdprojectumb@gmail.com" &&
-          password === "Wash123!" &&
-          pin === "1111"
-        ) {
-          event.preventDefault();
-          window.sessionStorage.setItem("wds_local_admin_verified", "wbdprojectumb@gmail.com");
-          window.location.href = "admin-portal.html";
-          return;
-        }
-
-        event.preventDefault();
-      });
-    })();
-  </script>
   <script src="app.js"></script>
 </body>
 </html>
