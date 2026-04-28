@@ -77,87 +77,48 @@
     <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
   </footer>
 
-  <script type="module">
-    import { supabase } from "./supabaseClient.js";
-    import {
-      LOCAL_ADMIN_CREDENTIALS,
-      setAdminPortalVerification,
-      setLocalAdminPortalVerification,
-      clearAdminPortalVerification
-    } from "./lib/state.js";
+  <script>
+    (() => {
+      const form = document.getElementById("adminLoginForm");
+      const button = document.getElementById("adminLoginButton");
+      const ADMIN_EMAIL = "wbdprojectumb@gmail.com";
+      const ADMIN_PASSWORD = "Wash123!";
+      const ADMIN_PIN = "1111";
 
-    const form = document.getElementById("adminLoginForm");
-    const button = document.getElementById("adminLoginButton");
-
-    const attemptAdminLogin = async () => {
-      if (!(form instanceof HTMLFormElement)) return;
-
-      const formData = new FormData(form);
-      const email = String(formData.get("adminEmail") || "").trim();
-      const password = String(formData.get("adminPassword") || "");
-      const pin = String(formData.get("adminPin") || "").trim();
-
-      if (!email || !password || !/^\d{4}$/.test(pin)) {
-        window.alert("Please enter your admin email, password, and 4-digit PIN.");
+      if (!(form instanceof HTMLFormElement) || !(button instanceof HTMLButtonElement)) {
         return;
       }
 
-      try {
-        clearAdminPortalVerification();
+      const attemptAdminLogin = () => {
+        const formData = new FormData(form);
+        const email = String(formData.get("adminEmail") || "").trim().toLowerCase();
+        const password = String(formData.get("adminPassword") || "");
+        const pin = String(formData.get("adminPin") || "").trim();
 
-        if (
-          email.toLowerCase() === LOCAL_ADMIN_CREDENTIALS.email.toLowerCase() &&
-          password === LOCAL_ADMIN_CREDENTIALS.password &&
-          pin === LOCAL_ADMIN_CREDENTIALS.pin
-        ) {
-          let authUserId = null;
-          const signInResult = await supabase.auth.signInWithPassword({ email, password });
-
-          if (signInResult.error) {
-            const signUpResult = await supabase.auth.signUp({
-              email,
-              password,
-              options: {
-                data: {
-                  full_name: "WDS Admin",
-                  phone: ""
-                }
-              }
-            });
-
-            if (signUpResult.error) throw signUpResult.error;
-
-            const retrySignIn = await supabase.auth.signInWithPassword({ email, password });
-            if (retrySignIn.error) throw retrySignIn.error;
-            authUserId = retrySignIn.data.user?.id || null;
-          } else {
-            authUserId = signInResult.data.user?.id || null;
-          }
-
-          if (authUserId) {
-            setAdminPortalVerification(authUserId);
-          } else {
-            setLocalAdminPortalVerification(LOCAL_ADMIN_CREDENTIALS.email);
-          }
-
-          window.location.href = "admin-portal.html";
+        if (!email || !password || !/^\d{4}$/.test(pin)) {
+          window.alert("Please enter your admin email, password, and 4-digit PIN.");
           return;
         }
 
-        window.alert("That admin email, password, or PIN is incorrect.");
-      } catch (error) {
-        window.alert(error.message || "Could not sign in to the admin portal.");
-      }
-    };
+        if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD || pin !== ADMIN_PIN) {
+          window.alert("That admin email, password, or PIN is incorrect.");
+          return;
+        }
 
-    form?.addEventListener("submit", (event) => {
-      event.preventDefault();
-      attemptAdminLogin();
-    });
+        window.sessionStorage.setItem("wds_local_admin_verified", ADMIN_EMAIL);
+        window.location.href = "admin-portal.html";
+      };
 
-    button?.addEventListener("click", () => {
-      attemptAdminLogin();
-    });
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        attemptAdminLogin();
+      });
+
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        attemptAdminLogin();
+      });
+    })();
   </script>
   <script src="app.js"></script>
 </body>
