@@ -5,7 +5,8 @@ import {
   buildRegisteredOrderRedirect,
   redirectToLogin,
   getSessionState,
-  upsertUserProfile
+  upsertUserProfile,
+  populateSessionFields
 } from "./state.js";
 
 const LOYALTY_REDEMPTION_TIERS = [
@@ -86,54 +87,65 @@ const bindLoyaltyDiscountOptions = (sessionState) => {
 
   if (!container || !orderTotal) return;
 
-  if (customerTypeInput instanceof HTMLInputElement && customerTypeInput.value !== "registered") {
-    container.innerHTML = '<p class="loyalty-discount-note">Create or use an account to redeem loyalty points.</p>';
-    updateDiscountPreview(null);
-    return;
-  }
+  const renderLoyaltyOptions = () => {
+    if (customerTypeInput instanceof HTMLInputElement && customerTypeInput.value !== "registered") {
+      container.innerHTML = '<p class="loyalty-discount-note">Create or use an account to redeem loyalty points.</p>';
+      updateDiscountPreview(null);
+      return;
+    }
 
-  const baseTotal = money(orderTotal.value);
+    const baseTotal = money(orderTotal.value);
 
-  if (!sessionState.loggedIn || !sessionState.profile) {
-    container.innerHTML = '<p class="loyalty-discount-note">Log in to redeem loyalty points for a discount.</p>';
-    updateDiscountPreview(null);
-    return;
-  }
+    if (!sessionState.loggedIn || !sessionState.profile) {
+      container.innerHTML = '<p class="loyalty-discount-note">Log in to redeem loyalty points for a discount.</p>';
+      updateDiscountPreview(null);
+      return;
+    }
 
-  const availablePoints = sessionState.profile.loyaltyPoints;
-  const tierMarkup = LOYALTY_REDEMPTION_TIERS.map((tier) => {
-    const hasPoints = availablePoints >= tier.points;
-    const meetsMinimum = baseTotal >= tier.minimumOrder;
-    const disabled = !hasPoints || !meetsMinimum;
-    const reason = !hasPoints
-      ? "Need " + tier.points + " pts"
-      : !meetsMinimum
-        ? "Requires " + dollars + tier.minimumOrder.toFixed(2) + " order"
-        : "Apply " + dollars + tier.discount.toFixed(2) + " off";
+    const selectedValue = container.querySelector('input[name="loyaltyTier"]:checked')?.value || "0";
+    const availablePoints = sessionState.profile.loyaltyPoints;
+    const tierMarkup = LOYALTY_REDEMPTION_TIERS.map((tier) => {
+      const hasPoints = availablePoints >= tier.points;
+      const meetsMinimum = baseTotal >= tier.minimumOrder;
+      const disabled = !hasPoints || !meetsMinimum;
+      const checked = !disabled && String(tier.points) === selectedValue;
+      const reason = !hasPoints
+        ? "Need " + tier.points + " pts"
+        : !meetsMinimum
+          ? "Requires " + dollars + tier.minimumOrder.toFixed(2) + " order"
+          : "Apply " + dollars + tier.discount.toFixed(2) + " off";
 
-    return '<label class="loyalty-discount-choice ' + (disabled ? 'disabled' : '') + '">' +
-      '<input type="radio" name="loyaltyTier" value="' + tier.points + '" ' + (disabled ? 'disabled' : '') + '>' +
-      '<span>' + tier.points + ' pts = ' + dollars + tier.discount.toFixed(2) + ' off <small>' + reason + '</small></span>' +
-      '</label>';
-  }).join("");
+      return '<label class="loyalty-discount-choice ' + (disabled ? 'disabled' : '') + '">' +
+        '<input type="radio" name="loyaltyTier" value="' + tier.points + '" ' + (disabled ? 'disabled' : '') + ' ' + (checked ? 'checked' : '') + '>' +
+        '<span>' + tier.points + ' pts = ' + dollars + tier.discount.toFixed(2) + ' off <small>' + reason + '</small></span>' +
+        '</label>';
+    }).join("");
 
-  container.innerHTML =
-    '<h4>Use Loyalty Points</h4>' +
-    '<p class="loyalty-discount-note">Available balance: ' + availablePoints + ' pts</p>' +
-    '<label class="loyalty-discount-choice">' +
-      '<input type="radio" name="loyaltyTier" value="0" checked>' +
-      '<span>No discount this order</span>' +
-    '</label>' +
-    tierMarkup;
+    container.innerHTML =
+      '<h4>Use Loyalty Points</h4>' +
+      '<p class="loyalty-discount-note">Available balance: ' + availablePoints + ' pts</p>' +
+      '<label class="loyalty-discount-choice">' +
+        '<input type="radio" name="loyaltyTier" value="0" ' + (selectedValue === "0" ? "checked" : "") + '>' +
+        '<span>No discount this order</span>' +
+      '</label>' +
+      tierMarkup;
+
+    const requestedPoints = parseInt(container.querySelector('input[name="loyaltyTier"]:checked')?.value || "0", 10);
+    const tier = getEligibleLoyaltyTier(availablePoints, baseTotal, requestedPoints);
+    updateDiscountPreview(tier);
+  };
 
   container.addEventListener("change", (event) => {
     if (!(event.target instanceof HTMLInputElement) || event.target.name !== "loyaltyTier") return;
+    const availablePoints = sessionState.profile?.loyaltyPoints || 0;
+    const baseTotal = money(orderTotal.value);
     const requestedPoints = parseInt(event.target.value || "0", 10);
     const tier = getEligibleLoyaltyTier(availablePoints, baseTotal, requestedPoints);
     updateDiscountPreview(tier);
   });
 
-  updateDiscountPreview(null);
+  document.addEventListener("review-totals-updated", renderLoyaltyOptions);
+  renderLoyaltyOptions();
 };
 const createCardToken = () => {
   const bytes = new Uint8Array(12);
@@ -323,6 +335,19 @@ export const bindAccountForm = (supabase, sessionState, showToast) => {
   const savedCardForm = document.getElementById("savedCardForm");
   const showNewCardButton = document.getElementById("showNewCardForm");
   const removeSavedCardButton = document.getElementById("removeSavedCard");
+  const saveNewCardButton = document.getElementById("saveNewCard");
+
+  const refreshAccountPageState = async () => {
+    const latestState = await getSessionState(supabase);
+
+    sessionState.loggedIn = latestState.loggedIn;
+    sessionState.authUser = latestState.authUser;
+    sessionState.profile = latestState.profile;
+    sessionState.savedPayment = latestState.savedPayment;
+
+    populateSessionFields(latestState);
+    updateSavedPaymentDisplay(latestState.savedPayment);
+  };
 
   const setAccountNote = (type, message) => {
     if (!accountNote) return;
@@ -386,7 +411,11 @@ export const bindAccountForm = (supabase, sessionState, showToast) => {
     const phone = String(formData.get("accountPhone") || "").trim();
     const email = String(formData.get("accountEmail") || "").trim();
     const password = String(formData.get("accountPassword") || "").trim();
-    const cardAction = String(formData.get("accountCardAction") || "").trim();
+    const submitterAction =
+      event.submitter instanceof HTMLButtonElement || event.submitter instanceof HTMLInputElement
+        ? String(event.submitter.value || "").trim()
+        : "";
+    const cardAction = submitterAction || String(formData.get("accountCardAction") || "").trim();
     const textUpdates = formData.get("textUpdates") === "on";
     const emailUpdates = formData.get("emailUpdates") === "on";
     const allowSavedCard = formData.get("allowSavedCard") === "on";
@@ -436,18 +465,26 @@ export const bindAccountForm = (supabase, sessionState, showToast) => {
       const successMessages = ["Your account changes were saved."];
 
       if (cardAction === "save-card" && cardDetails) {
-        sessionState.savedPayment = await createSavedCardRecord(supabase, sessionState.profile.userId, cardDetails.cardNumber);
+        const savedCard = await createSavedCardRecord(supabase, sessionState.profile.userId, cardDetails.cardNumber);
+        sessionState.savedPayment = savedCard || {
+          card_brand: "Card",
+          last4: String(cardDetails.cardNumber || "").replace(/\D/g, "").slice(-4)
+        };
         updateSavedPaymentDisplay(sessionState.savedPayment);
+        await refreshAccountPageState();
         closeCardForm();
         successMessages.push("Your new card was saved.");
       }
 
       if (cardAction === "remove-card") {
         await removeSavedCardRecords(supabase, sessionState.profile.userId);
-        sessionState.savedPayment = null;
-        updateSavedPaymentDisplay(null);
+        await refreshAccountPageState();
         closeCardForm();
         successMessages.push("Your saved card was removed.");
+      }
+
+      if (cardAction !== "save-card" && cardAction !== "remove-card") {
+        await refreshAccountPageState();
       }
 
       const passwordField = document.getElementById("accountPassword");
@@ -524,6 +561,8 @@ export const bindReviewForm = (supabase, sessionState, showToast) => {
 
       const { subtotal, tax, total } = calculateTotals(items);
       let discountTier = null;
+      let discountAmount = 0;
+      let finalTotal = total;
       let userId = null;
       let guestOrderId = null;
 
@@ -540,6 +579,9 @@ export const bindReviewForm = (supabase, sessionState, showToast) => {
           if (!discountTier) {
             throw new Error("That loyalty discount is not available for this order.");
           }
+
+          discountAmount = money(discountTier.discount);
+          finalTotal = money(Math.max(total - discountAmount, 0));
         }
       } else {
         const { data: guest, error: guestError } = await supabase
@@ -564,9 +606,9 @@ export const bindReviewForm = (supabase, sessionState, showToast) => {
           order_status: "Started",
           payment_method: paymentMethod,
           payment_status: paymentMethod === "cash" ? "Pending" : "Paid",
-          subtotal: subtotal,
-          tax: tax,
-          total: total // Let the database RPC apply the discount math!
+          subtotal,
+          tax,
+          total: finalTotal
         })
         .select("order_id")
         .single();
@@ -597,20 +639,38 @@ export const bindReviewForm = (supabase, sessionState, showToast) => {
       if (statusError) throw statusError;
 
       if (customerType === "registered" && sessionState.profile) {
-        
-        // 1. If they used a discount, trigger the secure backend RPC!
-        if (discountTier) {
-          const { error: rpcError } = await supabase.rpc('spend_loyalty_points', {
-            p_user_id: userId,
-            p_order_id: orderId,
-            p_points: discountTier.points
-          });
+        const earnedPoints = 10;
+        const redeemedPoints = discountTier ? discountTier.points : 0;
+        const updates = { loyalty_points: sessionState.profile.loyaltyPoints - redeemedPoints + earnedPoints };
 
-          if (rpcError) throw rpcError;
+        const { error: userUpdateError } = await supabase
+          .from("users")
+          .update(updates)
+          .eq("user_id", userId);
+
+        if (userUpdateError) throw userUpdateError;
+
+        const loyaltyTransactions = [];
+
+        if (discountTier) {
+          loyaltyTransactions.push({
+            user_id: userId,
+            order_id: orderId,
+            points_change: -discountTier.points,
+            description: `${discountTier.points} points redeemed for ${String.fromCharCode(36)}${discountAmount.toFixed(2)} off order #${orderId}`
+          });
         }
 
-        // 2. No "earn points" code here! 
-        // Your database trigger (trg_earn_points_on_insert) will automatically add the 10% 
+        loyaltyTransactions.push({
+          user_id: userId,
+          order_id: orderId,
+          points_change: earnedPoints,
+          description: `${earnedPoints} points earned for order #${orderId}`
+        });
+
+        const { error: loyaltyTxError } = await supabase.from("loyalty_transactions").insert(loyaltyTransactions);
+
+        if (loyaltyTxError) throw loyaltyTxError;
 
         if (paymentMethod === "new-card" && formData.get("savePaymentMethod") === "yes" && cardDetails) {
           await createSavedCardRecord(supabase, userId, cardDetails.cardNumber);

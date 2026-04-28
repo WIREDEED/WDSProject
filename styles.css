@@ -967,6 +967,127 @@ textarea {
 }
 
 /* =========================
+   Admin Portal
+========================= */
+.admin-overview-card,
+.admin-control-panel,
+.admin-editor-panel {
+  text-align: left;
+}
+
+.admin-overview-grid {
+  grid-template-columns: 1.35fr 0.8fr;
+}
+
+.admin-status-box {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.admin-portal-grid {
+  width: min(1280px, 100%);
+  grid-template-columns: 0.92fr 1.08fr;
+  align-items: start;
+}
+
+.admin-filter-stack {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.admin-filter-stack select,
+.admin-filter-stack input,
+.admin-editor-form input,
+.admin-editor-form select,
+.admin-editor-form textarea {
+  width: 100%;
+}
+
+.admin-panel-note {
+  margin-top: 20px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, rgba(232, 241, 255, 0.74), rgba(255, 255, 255, 0.9));
+}
+
+.admin-panel-note strong {
+  display: block;
+  color: var(--primary-dark);
+}
+
+.admin-panel-note p {
+  margin: 6px 0 0;
+}
+
+.admin-record-list {
+  margin-top: 22px;
+  display: grid;
+  gap: 14px;
+  max-height: 740px;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.admin-record-card {
+  width: 100%;
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-record-card:hover,
+.admin-record-card.active {
+  transform: translateY(-2px);
+  border-color: rgba(75, 134, 216, 0.3);
+  box-shadow: 0 18px 34px rgba(18, 57, 102, 0.15);
+}
+
+.admin-record-card p {
+  margin: 0;
+  color: var(--text-light);
+}
+
+.admin-editor-form {
+  margin-top: 18px;
+}
+
+.admin-editor-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.admin-editor-actions {
+  margin-top: 24px;
+}
+
+.admin-checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.admin-checkbox-field input {
+  width: auto;
+  transform: scale(1.15);
+}
+
+/* =========================
    Review
 ========================= */
 .review-stack {
@@ -1369,6 +1490,10 @@ textarea {
   .dashboard-top-row,
   .dashboard-grid,
   .account-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-portal-grid {
     grid-template-columns: 1fr;
   }
 }

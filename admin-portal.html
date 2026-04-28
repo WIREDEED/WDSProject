@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal | WDS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="logo-header">
+    <div class="site-mark" aria-label="WDS">WDS</div>
+    <h1>Admin Data Portal</h1>
+    <p>Review, search, and update every operational table from one clean staff-facing workspace.</p>
+  </header>
+
+  <nav class="main-nav">
+    <a href="/">Home</a>
+    <a href="/dashboard">Customer Dashboard</a>
+    <a href="/admin-login">Admin Login</a>
+    <a href="/admin-portal" class="active">Admin Portal</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-card admin-overview-card">
+      <div class="dashboard-top-row admin-overview-grid">
+        <div class="dashboard-welcome">
+          <span class="eyebrow">Operations Hub</span>
+          <h2>Welcome back, <span id="adminPortalName">administrator</span></h2>
+          <p>
+            Use the controls below to switch between tables, filter records quickly, and edit each entry without leaving the portal.
+          </p>
+          <div class="button-group">
+            <button type="button" class="btn" id="adminRefreshButton">Refresh Data</button>
+            <button type="button" class="btn btn-outline" id="adminNewRecordButton">Create New Record</button>
+          </div>
+        </div>
+
+        <div class="loyalty-points-box admin-status-box">
+          <h3>Portal Status</h3>
+          <p id="adminPortalRole">Administrator</p>
+          <div class="detail-pill" id="adminTableCount">0 tables configured</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="hero">
+    <div class="dashboard-grid admin-portal-grid">
+      <div class="hero-card dashboard-panel admin-control-panel">
+        <span class="eyebrow">Table Browser</span>
+        <h2>Find the data you need</h2>
+        <div class="admin-filter-stack">
+          <div class="field-group">
+            <label for="adminTableSelect">Database Table</label>
+            <select id="adminTableSelect"></select>
+          </div>
+
+          <div class="field-group">
+            <label for="adminSearchColumn">Search Scope</label>
+            <select id="adminSearchColumn"></select>
+          </div>
+
+          <div class="field-group">
+            <label for="adminSearchInput">Search Records</label>
+            <input id="adminSearchInput" type="search" placeholder="Search by ID, name, email, status, note, or amount">
+          </div>
+        </div>
+
+        <div class="admin-panel-note">
+          <strong id="adminResultCount">0 records loaded</strong>
+          <p id="adminTableDescription">Choose a table to load the latest rows from Supabase.</p>
+        </div>
+
+        <div class="admin-record-list" id="adminRecordList">
+          <p class="muted-copy">Rows will appear here after the first table finishes loading.</p>
+        </div>
+      </div>
+
+      <div class="hero-card dashboard-panel admin-editor-panel">
+        <span class="eyebrow">Record Editor</span>
+        <h2 id="adminEditorTitle">Select a record</h2>
+        <p id="adminEditorLead">Choose a row from the browser to review and update its values here.</p>
+
+        <form id="adminEditorForm" class="admin-editor-form">
+          <div class="form-grid" id="adminEditorFields"></div>
+
+          <div class="button-group admin-editor-actions">
+            <button type="submit" class="btn" id="adminSaveButton">Save Changes</button>
+            <button type="button" class="btn btn-outline danger-btn" id="adminDeleteButton">Delete Record</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
