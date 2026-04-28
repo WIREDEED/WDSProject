@@ -49,7 +49,7 @@
             </div>
 
             <div class="button-group" style="margin-top: 20px;">
-              <button type="submit" class="btn" id="adminLoginButton">Admin Log In</button>
+              <button type="button" class="btn" id="adminLoginButton">Admin Log In</button>
               <a href="/login" class="btn btn-outline">Back to Customer Login</a>
             </div>
           </form>
@@ -77,6 +77,88 @@
     <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
   </footer>
 
+  <script type="module">
+    import { supabase } from "./supabaseClient.js";
+    import {
+      LOCAL_ADMIN_CREDENTIALS,
+      setAdminPortalVerification,
+      setLocalAdminPortalVerification,
+      clearAdminPortalVerification
+    } from "./lib/state.js";
+
+    const form = document.getElementById("adminLoginForm");
+    const button = document.getElementById("adminLoginButton");
+
+    const attemptAdminLogin = async () => {
+      if (!(form instanceof HTMLFormElement)) return;
+
+      const formData = new FormData(form);
+      const email = String(formData.get("adminEmail") || "").trim();
+      const password = String(formData.get("adminPassword") || "");
+      const pin = String(formData.get("adminPin") || "").trim();
+
+      if (!email || !password || !/^\d{4}$/.test(pin)) {
+        window.alert("Please enter your admin email, password, and 4-digit PIN.");
+        return;
+      }
+
+      try {
+        clearAdminPortalVerification();
+
+        if (
+          email.toLowerCase() === LOCAL_ADMIN_CREDENTIALS.email.toLowerCase() &&
+          password === LOCAL_ADMIN_CREDENTIALS.password &&
+          pin === LOCAL_ADMIN_CREDENTIALS.pin
+        ) {
+          let authUserId = null;
+          const signInResult = await supabase.auth.signInWithPassword({ email, password });
+
+          if (signInResult.error) {
+            const signUpResult = await supabase.auth.signUp({
+              email,
+              password,
+              options: {
+                data: {
+                  full_name: "WDS Admin",
+                  phone: ""
+                }
+              }
+            });
+
+            if (signUpResult.error) throw signUpResult.error;
+
+            const retrySignIn = await supabase.auth.signInWithPassword({ email, password });
+            if (retrySignIn.error) throw retrySignIn.error;
+            authUserId = retrySignIn.data.user?.id || null;
+          } else {
+            authUserId = signInResult.data.user?.id || null;
+          }
+
+          if (authUserId) {
+            setAdminPortalVerification(authUserId);
+          } else {
+            setLocalAdminPortalVerification(LOCAL_ADMIN_CREDENTIALS.email);
+          }
+
+          window.location.href = "admin-portal.html";
+          return;
+        }
+
+        window.alert("That admin email, password, or PIN is incorrect.");
+      } catch (error) {
+        window.alert(error.message || "Could not sign in to the admin portal.");
+      }
+    };
+
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      attemptAdminLogin();
+    });
+
+    button?.addEventListener("click", () => {
+      attemptAdminLogin();
+    });
+  </script>
   <script src="app.js"></script>
 </body>
 </html>
