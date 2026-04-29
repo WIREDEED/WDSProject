@@ -516,6 +516,7 @@ export const bindAccountForm = (supabase, sessionState, showToast) => {
       const successMessage = successMessages.join(" ");
       setAccountNote("success", successMessage);
       showToast("success", successMessage);
+      window.alert("Account settings saved successfully.");
     } catch (error) {
       const message = error.message || "Could not update your account right now.";
       setAccountNote("error", message);
