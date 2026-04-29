@@ -141,11 +141,27 @@
   <script>
     const accountParams = new URLSearchParams(window.location.search);
 
-    if (accountParams.get("success") === "1") {
+    const accountSuccessMessages = {
+      "1": "Your account changes were saved.",
+      "card-saved": "Your new card was saved.",
+      "card-removed": "Your saved card was removed. You can enter a new card now."
+    };
+    const accountSuccessMessage = accountSuccessMessages[accountParams.get("success")];
+
+    if (accountSuccessMessage) {
       const successNote = document.createElement("div");
       successNote.className = "form-note";
-      successNote.textContent = "Your account changes were saved.";
+      successNote.textContent = accountSuccessMessage;
       document.querySelector(".hero-card")?.prepend(successNote);
+    }
+
+    if (accountParams.get("addCard") === "1") {
+      document.getElementById("savedCardForm")?.classList.remove("hidden");
+      const cardAction = document.getElementById("accountCardAction");
+      const showNewCard = document.getElementById("showNewCardForm");
+
+      if (cardAction instanceof HTMLInputElement) cardAction.value = "save-card";
+      if (showNewCard instanceof HTMLButtonElement) showNewCard.textContent = "Cancel New Card";
     }
   </script>
   <script src="app.js"></script>
