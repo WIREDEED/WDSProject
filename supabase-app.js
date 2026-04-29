@@ -27,9 +27,12 @@ const wireLogout = () => {
     }
 
     event.preventDefault();
-    clearAdminPortalVerification();
-    await supabase.auth.signOut();
-    window.location.href = "index.html";
+    try {
+      clearAdminPortalVerification();
+      await supabase.auth.signOut();
+    } finally {
+      window.location.href = "index.html";
+    }
   });
 };
 

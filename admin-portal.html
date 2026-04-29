@@ -13,11 +13,9 @@
     <p>Review, search, and update every operational table from one clean staff-facing workspace.</p>
   </header>
 
-  <nav class="main-nav">
-    <a href="/">Home</a>
-    <a href="/dashboard">Customer Dashboard</a>
-    <a href="/admin-login">Admin Login</a>
+  <nav class="main-nav admin-nav">
     <a href="/admin-portal" class="active">Admin Portal</a>
+    <a href="/" class="nav-logout-button" id="logoutLink" onclick="sessionStorage.removeItem('wds_admin_verified'); sessionStorage.removeItem('wds_local_admin_verified'); window.location.href = 'index.html'; return false;">Log Out</a>
   </nav>
 
   <section class="hero">

@@ -131,17 +131,23 @@ img {
   box-shadow: 0 10px 20px rgba(10, 33, 40, 0.14);
 }
 
-.main-nav a {
+.main-nav a,
+.nav-logout-button {
   position: relative;
   padding: 10px 16px;
   border-radius: 999px;
+  border: 0;
+  background: transparent;
   color: #f7fbff;
+  font: inherit;
   text-decoration: none;
   font-weight: 700;
+  cursor: pointer;
   transition: background-color 0.25s ease, color 0.25s ease, transform 0.25s ease;
 }
 
-.main-nav a::after {
+.main-nav a::after,
+.nav-logout-button::after {
   content: "";
   position: absolute;
   left: 16px;
@@ -156,15 +162,29 @@ img {
 }
 
 .main-nav a:hover,
-.main-nav a.active {
+.main-nav a.active,
+.nav-logout-button:hover {
   background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
   transform: translateY(-1px);
 }
 
 .main-nav a:hover::after,
-.main-nav a.active::after {
+.main-nav a.active::after,
+.nav-logout-button:hover::after {
   transform: scaleX(1);
+}
+
+.admin-nav {
+  gap: 10px;
+}
+
+.admin-nav .nav-logout-button {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.admin-nav .nav-logout-button:hover {
+  background: rgba(255, 255, 255, 0.28);
 }
 
 /* =========================
@@ -1543,8 +1563,14 @@ textarea {
   }
 
   .main-nav a,
+  .nav-logout-button,
   .btn {
     width: 100%;
+  }
+
+  .admin-nav a,
+  .admin-nav .nav-logout-button {
+    width: auto;
   }
 
   .loyalty-points-box p,

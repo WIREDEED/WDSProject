@@ -326,7 +326,9 @@ export const updateAuthNavigation = (sessionState) => {
     authLink.setAttribute("href", buildPageUrl("login.html", new URLSearchParams({ next })));
   }
 
-  existingLogout?.remove();
+  if (fileName !== "admin-portal.html") {
+    existingLogout?.remove();
+  }
 };
 
 export const populateSessionFields = (sessionState) => {
