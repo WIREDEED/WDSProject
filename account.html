@@ -10,7 +10,7 @@
   <header class="logo-header">
     <div class="site-mark" aria-label="WDS">WDS</div>
     <h1>Manage Account</h1>
-    <p>Update your information, choose how you want to hear from us, and manage your saved payment settings.</p>
+    <p>Update your profile information and account password.</p>
   </header>
 
   <nav class="main-nav">
@@ -25,7 +25,6 @@
     <div class="hero-card">
       <form class="account-form" action="/account" method="post">
         <div id="accountFormNote" class="form-note hidden" role="status" aria-live="polite"></div>
-        <input id="accountCardAction" name="accountCardAction" type="hidden" value="">
 
         <div class="account-grid">
           <div class="account-panel">
@@ -54,78 +53,6 @@
               </div>
             </div>
           </div>
-
-          <div class="account-panel">
-            <span class="eyebrow">Preferences</span>
-            <h2>Payment and notifications</h2>
-
-            <div class="ledger-list">
-              <div class="ledger-item">
-                <div>
-                  <strong>Saved Payment Method</strong>
-                  <p id="savedPaymentDescription">No saved payment method yet.</p>
-                </div>
-                <span class="detail-pill" id="savedPaymentStatus">None</span>
-              </div>
-
-              <div class="ledger-item">
-                <div>
-                  <strong>Loyalty Points</strong>
-                  <p>You start at 0 and earn 10 points for each completed purchase.</p>
-                </div>
-                <span class="detail-pill" id="accountLoyaltyPoints">0 pts</span>
-              </div>
-            </div>
-
-            <div class="saved-card-actions">
-              <button class="btn btn-outline" type="button" id="showNewCardForm">Add New Card</button>
-              <button class="btn btn-outline danger-btn" type="button" id="removeSavedCard">Remove Saved Card</button>
-            </div>
-
-            <div class="saved-card-form hidden" id="savedCardForm">
-              <h3>Add a new card</h3>
-              <div class="form-grid">
-                <div class="field-group full">
-                  <label for="cardholderName">Cardholder Name</label>
-                  <input id="cardholderName" name="cardholderName" type="text" placeholder="Name on card" autocomplete="cc-name">
-                </div>
-
-                <div class="field-group full">
-                  <label for="cardNumber">Card Number</label>
-                  <input id="cardNumber" name="cardNumber" type="text" placeholder="1234 5678 9012 3456" autocomplete="cc-number" inputmode="numeric" data-format="card">
-                </div>
-
-                <div class="field-group">
-                  <label for="expiry">Expiry</label>
-                  <input id="expiry" name="expiry" type="text" placeholder="MM/YY" autocomplete="cc-exp" data-format="expiry">
-                </div>
-
-                <div class="field-group">
-                  <label for="cvv">CVV</label>
-                  <input id="cvv" name="cvv" type="password" placeholder="123" autocomplete="cc-csc" inputmode="numeric" data-format="cvv">
-                </div>
-              </div>
-              <p class="saved-card-note">Only a demo token and the card ending are saved for this project.</p>
-              <div class="button-group" style="margin-top: 16px;">
-                <button class="btn" type="submit" id="saveNewCard" name="accountCardAction" value="save-card">Save Card</button>
-              </div>
-            </div>
-
-            <div style="margin-top: 18px;">
-              <div class="checkbox-row">
-                <input id="textUpdates" name="textUpdates" type="checkbox" checked>
-                <label for="textUpdates">Send text updates when an order moves to In Progress, Ready for Pickup, or Completed.</label>
-              </div>
-              <div class="checkbox-row" style="margin-top: 12px;">
-                <input id="emailUpdates" name="emailUpdates" type="checkbox" checked>
-                <label for="emailUpdates">Send email summaries for order confirmations and account activity.</label>
-              </div>
-              <div class="checkbox-row" style="margin-top: 12px;">
-                <input id="allowSavedCard" name="allowSavedCard" type="checkbox" checked>
-                <label for="allowSavedCard">Allow future orders to use a saved tokenized card on file.</label>
-              </div>
-            </div>
-          </div>
         </div>
 
         <div class="button-group" style="margin-top: 20px;">
@@ -142,9 +69,7 @@
     const accountParams = new URLSearchParams(window.location.search);
 
     const accountSuccessMessages = {
-      "1": "Your account changes were saved.",
-      "card-saved": "Your new card was saved.",
-      "card-removed": "Your saved card was removed. You can enter a new card now."
+      "1": "Your account changes were saved."
     };
     const accountSuccessMessage = accountSuccessMessages[accountParams.get("success")];
 
@@ -155,14 +80,6 @@
       document.querySelector(".hero-card")?.prepend(successNote);
     }
 
-    if (accountParams.get("addCard") === "1") {
-      document.getElementById("savedCardForm")?.classList.remove("hidden");
-      const cardAction = document.getElementById("accountCardAction");
-      const showNewCard = document.getElementById("showNewCardForm");
-
-      if (cardAction instanceof HTMLInputElement) cardAction.value = "save-card";
-      if (showNewCard instanceof HTMLButtonElement) showNewCard.textContent = "Cancel New Card";
-    }
   </script>
   <script src="app.js"></script>
 </body>
