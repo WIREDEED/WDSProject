@@ -306,7 +306,7 @@ export const updateAuthNavigation = (sessionState) => {
     if (nav && !existingLogout) {
       const logoutLink = document.createElement("a");
       logoutLink.id = "logoutLink";
-      logoutLink.href = "#logout";
+      logoutLink.href = "index.html";
       logoutLink.textContent = "Log Out";
       nav.appendChild(logoutLink);
     }

@@ -102,6 +102,27 @@ with check (
   )
 );
 
+drop policy if exists "orders_update_own_cancel" on public.orders;
+create policy "orders_update_own_cancel"
+on public.orders for update
+using (
+  exists (
+    select 1
+    from public.users
+    where users.user_id = orders.user_id
+      and users.auth_user_id = auth.uid()
+  )
+)
+with check (
+  order_status = 'Cancelled'
+  and exists (
+    select 1
+    from public.users
+    where users.user_id = orders.user_id
+      and users.auth_user_id = auth.uid()
+  )
+);
+
 drop policy if exists "orders_admin_all" on public.orders;
 create policy "orders_admin_all"
 on public.orders for all

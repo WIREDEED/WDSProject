@@ -14,9 +14,16 @@ import {
   bindLoginForm,
   bindRegisterForm,
   bindAccountForm,
-  bindReviewForm,
-  bindAdminLoginForm
+  bindReviewForm
 } from "./handlers.js";
+
+const clearSupabaseAuthStorage = () => {
+  [window.localStorage, window.sessionStorage].forEach((storage) => {
+    Object.keys(storage)
+      .filter((key) => /^sb-.*-auth-token$/.test(key) || key.includes("supabase.auth.token"))
+      .forEach((key) => storage.removeItem(key));
+  });
+};
 
 const wireLogout = () => {
   document.addEventListener("click", async (event) => {
@@ -29,9 +36,10 @@ const wireLogout = () => {
     event.preventDefault();
     try {
       clearAdminPortalVerification();
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
     } finally {
-      window.location.href = "index.html";
+      clearSupabaseAuthStorage();
+      window.location.replace("index.html");
     }
   });
 };
@@ -74,7 +82,6 @@ export const bootSupabaseApp = async ({ showToast }) => {
   bindRegisterForm(supabase, showToast);
   bindAccountForm(supabase, sessionState, showToast);
   bindReviewForm(supabase, sessionState, showToast);
-  bindAdminLoginForm(supabase, showToast);
 
   supabase.auth.onAuthStateChange(async () => {
     sessionState = await getSessionState(supabase);

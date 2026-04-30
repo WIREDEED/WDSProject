@@ -511,12 +511,13 @@ export const bindAccountForm = (supabase, sessionState, showToast) => {
 
       const passwordField = document.getElementById("accountPassword");
       if (passwordField instanceof HTMLInputElement) passwordField.value = "";
-      if (password) successMessages.push("Your password was updated.");
+      if (password) successMessages.push("Password changed successfully.");
 
       const successMessage = successMessages.join(" ");
+      const toastMessage = password ? "Password changed successfully." : successMessage;
       setAccountNote("success", successMessage);
-      showToast("success", successMessage);
-      window.alert("Account settings saved successfully.");
+      showToast("success", toastMessage);
+      window.alert(password ? "Password changed successfully." : "Account settings saved successfully.");
     } catch (error) {
       const message = error.message || "Could not update your account right now.";
       setAccountNote("error", message);
@@ -588,16 +589,26 @@ export const bindReviewForm = (supabase, sessionState, showToast) => {
       let finalTotal = total;
       let userId = null;
       let guestOrderId = null;
+      let currentLoyaltyPoints = sessionState.profile?.loyaltyPoints || 0;
 
       if (customerType === "registered") {
         userId = sessionState.profile.userId;
+
+        const { data: latestProfile, error: latestProfileError } = await supabase
+          .from("users")
+          .select("loyalty_points")
+          .eq("user_id", userId)
+          .single();
+
+        if (latestProfileError) throw latestProfileError;
+        currentLoyaltyPoints = Number(latestProfile.loyalty_points || 0);
 
         if (paymentMethod === "saved-card" && !sessionState.savedPayment) {
           throw new Error("There is no saved payment method on this account yet.");
         }
 
         if (requestedLoyaltyPoints > 0) {
-          discountTier = getEligibleLoyaltyTier(sessionState.profile.loyaltyPoints, total, requestedLoyaltyPoints);
+          discountTier = getEligibleLoyaltyTier(currentLoyaltyPoints, total, requestedLoyaltyPoints);
 
           if (!discountTier) {
             throw new Error("That loyalty discount is not available for this order.");
@@ -664,7 +675,7 @@ export const bindReviewForm = (supabase, sessionState, showToast) => {
       if (customerType === "registered" && sessionState.profile) {
         const earnedPoints = 10;
         const redeemedPoints = discountTier ? discountTier.points : 0;
-        const updates = { loyalty_points: sessionState.profile.loyaltyPoints - redeemedPoints + earnedPoints };
+        const updates = { loyalty_points: currentLoyaltyPoints - redeemedPoints + earnedPoints };
 
         const { error: userUpdateError } = await supabase
           .from("users")

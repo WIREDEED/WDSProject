@@ -20,9 +20,10 @@ export const loadDashboardData = async (supabase, sessionState, showToast) => {
   const activeOrderLead = document.getElementById("activeOrderLead");
   const activeOrderStatus = document.getElementById("activeOrderStatus");
   const activeOrderMeta = document.getElementById("activeOrderMeta");
+  const cancelActiveOrderButton = document.getElementById("cancelActiveOrderButton");
   const completedOrderBox = document.getElementById("completedOrderBox");
 
-  if (!dashboardTransactions || !dashboardTimeline || !activeOrderTitle || !activeOrderLead || !activeOrderStatus || !activeOrderMeta || !completedOrderBox) {
+  if (!dashboardTransactions || !dashboardTimeline || !activeOrderTitle || !activeOrderLead || !activeOrderStatus || !activeOrderMeta || !cancelActiveOrderButton || !completedOrderBox) {
     return;
   }
 
@@ -85,6 +86,11 @@ export const loadDashboardData = async (supabase, sessionState, showToast) => {
       activeOrderStatus.textContent = activeOrder.order_status;
       activeOrderStatus.className = `status-badge ${String(activeOrder.order_status || "started").toLowerCase().replace(/\s+/g, "-")}`;
       activeOrderMeta.textContent = `Payment: ${String(activeOrder.payment_method || "pending").replace("-", " ")} | Total: $${Number(activeOrder.total || 0).toFixed(2)}`;
+      cancelActiveOrderButton.classList.remove("hidden");
+      cancelActiveOrderButton.dataset.orderId = String(activeOrder.order_id);
+    } else {
+      cancelActiveOrderButton.classList.add("hidden");
+      delete cancelActiveOrderButton.dataset.orderId;
     }
 
     if (timeline.length) {
@@ -170,6 +176,85 @@ export const loadDashboardData = async (supabase, sessionState, showToast) => {
         })
         .join("");
     }
+
+    cancelActiveOrderButton.addEventListener("click", async () => {
+      const orderId = cancelActiveOrderButton.dataset.orderId;
+
+      if (!orderId) return;
+
+      const shouldCancel = window.confirm("Cancel this order? This will remove it from your active orders.");
+      if (!shouldCancel) return;
+
+      cancelActiveOrderButton.disabled = true;
+
+      try {
+        const { error: updateError } = await supabase
+          .from("orders")
+          .update({
+            order_status: "Cancelled",
+            updated_at: new Date().toISOString()
+          })
+          .eq("order_id", orderId)
+          .eq("user_id", userId);
+
+        if (updateError) throw updateError;
+
+        const { error: statusError } = await supabase.from("status_updates").insert({
+          order_id: Number(orderId),
+          status: "Cancelled",
+          note: "Order cancelled by customer"
+        });
+
+        if (statusError) throw statusError;
+
+        const { data: loyaltyRows, error: loyaltyLookupError } = await supabase
+          .from("loyalty_transactions")
+          .select("points_change")
+          .eq("order_id", orderId)
+          .eq("user_id", userId);
+
+        if (loyaltyLookupError) throw loyaltyLookupError;
+
+        const loyaltyPointsToReverse = (loyaltyRows || []).reduce(
+          (sum, row) => sum + Number(row.points_change || 0),
+          0
+        );
+
+        if (loyaltyPointsToReverse !== 0) {
+          const { data: profile, error: profileError } = await supabase
+            .from("users")
+            .select("loyalty_points")
+            .eq("user_id", userId)
+            .single();
+
+          if (profileError) throw profileError;
+
+          const { error: pointsUpdateError } = await supabase
+            .from("users")
+            .update({
+              loyalty_points: Number(profile.loyalty_points || 0) - loyaltyPointsToReverse
+            })
+            .eq("user_id", userId);
+
+          if (pointsUpdateError) throw pointsUpdateError;
+
+          const { error: reversalError } = await supabase.from("loyalty_transactions").insert({
+            user_id: userId,
+            order_id: Number(orderId),
+            points_change: -loyaltyPointsToReverse,
+            description: `Loyalty points reversed because customer cancelled order #${orderId}`
+          });
+
+          if (reversalError) throw reversalError;
+        }
+
+        showToast("success", "Your order was cancelled.");
+        window.location.reload();
+      } catch (_error) {
+        cancelActiveOrderButton.disabled = false;
+        showToast("error", "Could not cancel this order right now.");
+      }
+    });
   } catch (_error) {
     showToast("error", "Could not load the dashboard right now.");
   }

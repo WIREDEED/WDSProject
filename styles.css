@@ -1383,6 +1383,10 @@ textarea {
   display: none;
 }
 
+#cancelActiveOrderButton {
+  margin-top: 12px;
+}
+
 .site-toast {
   position: fixed;
   right: 20px;

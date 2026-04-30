@@ -15,7 +15,7 @@
 
   <nav class="main-nav admin-nav">
     <a href="/admin-portal" class="active">Admin Portal</a>
-    <a href="/" class="nav-logout-button" id="logoutLink" onclick="sessionStorage.removeItem('wds_admin_verified'); sessionStorage.removeItem('wds_local_admin_verified'); window.location.href = 'index.html'; return false;">Log Out</a>
+    <a href="/" class="nav-logout-button" id="logoutLink" onclick="sessionStorage.removeItem('wds_admin_verified'); sessionStorage.removeItem('wds_local_admin_verified'); Object.keys(localStorage).filter((key) => /^sb-.*-auth-token$/.test(key) || key.includes('supabase.auth.token')).forEach((key) => localStorage.removeItem(key)); window.location.replace('index.html'); return false;">Log Out</a>
   </nav>
 
   <section class="hero">
@@ -111,6 +111,6 @@
     <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
   </footer>
 
-  <script src="app.js"></script>
+  <script src="admin-app.js"></script>
 </body>
 </html>
