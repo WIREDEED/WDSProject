@@ -333,6 +333,12 @@
             ` : ""}
           </div>
         `;
+      } else if (option.value === "saved-card") {
+        details = `
+          <div class="saved-card-checkout-actions">
+            <button type="button" class="btn btn-outline danger-btn" id="removeCheckoutSavedCard">Remove Saved Card</button>
+          </div>
+        `;
       }
 
       wrapper.innerHTML = `

@@ -832,6 +832,11 @@ textarea {
   color: #49626d;
 }
 
+.status-badge.drop-off {
+  background: var(--info-soft);
+  color: var(--primary);
+}
+
 .status-badge.in-progress {
   background: var(--warning-soft);
   color: var(--warning);
@@ -1045,9 +1050,10 @@ textarea {
   margin-top: 22px;
   display: grid;
   gap: 14px;
-  max-height: 740px;
-  overflow: auto;
-  padding-right: 6px;
+  max-height: 430px;
+  overflow-y: auto;
+  padding-right: 8px;
+  scrollbar-gutter: stable;
 }
 
 .admin-record-card {
@@ -1240,6 +1246,10 @@ textarea {
   display: block;
 }
 
+.saved-card-checkout-actions {
+  margin: 0 22px 18px 66px;
+}
+
 .payment-hint {
   margin-top: 10px;
   padding: 12px 14px;
@@ -1385,6 +1395,33 @@ textarea {
 
 #cancelActiveOrderButton {
   margin-top: 12px;
+}
+
+.current-order-list {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 8px;
+  scrollbar-gutter: stable;
+}
+
+.current-order-card {
+  padding: 14px;
+  border: 1px solid rgba(15, 79, 150, 0.14);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+}
+
+.current-order-card .cancel-order-button {
+  margin-top: 10px;
+}
+
+.current-order-note {
+  color: var(--text-light);
+  font-size: 0.9rem;
+  font-style: italic;
 }
 
 .site-toast {
@@ -1559,6 +1596,14 @@ textarea {
   .review-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .current-order-list {
+    max-height: 420px;
+  }
+
+  .admin-record-list {
+    max-height: 360px;
   }
 }
 

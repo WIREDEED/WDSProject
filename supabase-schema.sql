@@ -28,7 +28,7 @@ create table if not exists public.orders (
   appointment_date date not null,
   appointment_time text not null,
   notes text,
-  order_status text not null default 'Started',
+  order_status text not null default 'Drop off',
   payment_method text not null,
   payment_status text not null default 'Pending',
   subtotal numeric(10, 2) not null default 0,

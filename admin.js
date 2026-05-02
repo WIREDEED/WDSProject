@@ -11,12 +11,7 @@ const TABLE_CONFIG = {
       { key: "full_name", label: "Full Name", type: "text", required: true },
       { key: "phone", label: "Phone", type: "text", required: true },
       { key: "email", label: "Email", type: "email", required: true },
-      { key: "password_hash", label: "Password Hash", type: "text" },
-      { key: "wallet_balance", label: "Wallet Balance", type: "number", step: "0.01" },
       { key: "loyalty_points", label: "Loyalty Points", type: "number", step: "1" },
-      { key: "text_updates", label: "Text Updates", type: "checkbox" },
-      { key: "email_updates", label: "Email Updates", type: "checkbox" },
-      { key: "allow_saved_card", label: "Allow Saved Card", type: "checkbox" },
       { key: "auth_user_id", label: "Auth User ID", type: "text" },
       { key: "created_at", label: "Created At", type: "datetime-local", readOnly: true },
       { key: "updated_at", label: "Updated At", type: "datetime-local", readOnly: true }
@@ -80,6 +75,7 @@ const TABLE_CONFIG = {
         type: "select",
         required: true,
         options: [
+          { value: "Drop off", label: "Drop off" },
           { value: "Started", label: "Started" },
           { value: "In Progress", label: "In Progress" },
           { value: "Ready", label: "Ready" },
