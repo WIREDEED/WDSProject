@@ -198,6 +198,13 @@ const TABLE_CONFIG = {
   }
 };
 
+const HIDDEN_TABLES = new Set([
+  "wallet_transactions",
+  "loyalty_transactions",
+  "saved_payment_methods",
+  "admin_users"
+]);
+
 let initialized = false;
 
 const state = {
@@ -208,6 +215,8 @@ const state = {
   searchColumn: "all",
   isCreating: false,
   relationOptions: {},
+  customerResults: [],
+  selectedCustomerId: null,
   isLocalAdminMode: false
 };
 
@@ -251,10 +260,54 @@ const formatDateTimeLocal = (value) => {
   return local.toISOString().slice(0, 16);
 };
 
+const formatDisplayDateTime = (value) => {
+  if (!value) return "Not available";
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? "Not available" : parsed.toLocaleString();
+};
+
 const parseDateTimeLocal = (value) => {
   if (!value) return null;
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? value : parsed.toISOString();
+};
+
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD"
+  }).format(Number(amount || 0));
+
+const getLocalDayStart = (date = new Date()) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+const getLocalWeekStart = (date = new Date()) => {
+  const start = getLocalDayStart(date);
+  start.setDate(start.getDate() - start.getDay());
+  return start;
+};
+
+const getPreTaxOrderAmount = (order) => {
+  const subtotal = Number(order.subtotal);
+  if (Number.isFinite(subtotal)) return subtotal;
+
+  const total = Number(order.total || 0);
+  const tax = Number(order.tax || 0);
+  return Math.max(total - tax, 0);
+};
+
+const matchesCustomerTerm = (customer, term) => {
+  const searchText = [
+    customer.full_name,
+    customer.email,
+    customer.phone,
+    customer.user_id
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return searchText.includes(term.toLowerCase());
 };
 
 const getSelectedRow = () => {
@@ -524,7 +577,58 @@ const renderTableMeta = () => {
       ? "Local admin mode is active. The portal UI works locally, but database edits still depend on your Supabase table permissions and policies."
       : getConfig().description;
   }
-  if (portalCount) portalCount.textContent = `${Object.keys(TABLE_CONFIG).length} tables configured`;
+  if (portalCount) {
+    const visibleTableCount = Object.keys(TABLE_CONFIG).filter((tableName) => !HIDDEN_TABLES.has(tableName)).length;
+    portalCount.textContent = `${visibleTableCount} tables configured`;
+  }
+};
+
+const loadProfitSummary = async (supabase, showToast) => {
+  const todayAmount = document.getElementById("adminProfitToday");
+  const weekAmount = document.getElementById("adminProfitWeek");
+  const todayCount = document.getElementById("adminProfitTodayCount");
+  const weekCount = document.getElementById("adminProfitWeekCount");
+  const updatedText = document.getElementById("adminProfitUpdated");
+
+  if (!todayAmount || !weekAmount || !todayCount || !weekCount || !updatedText) return;
+
+  const now = new Date();
+  const todayStart = getLocalDayStart(now);
+  const tomorrowStart = new Date(todayStart);
+  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+  const weekStart = getLocalWeekStart(now);
+
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("subtotal, tax, total, order_status, payment_status, created_at")
+      .gte("created_at", weekStart.toISOString())
+      .neq("order_status", "Cancelled")
+      .eq("payment_status", "Paid");
+
+    if (error) throw error;
+
+    const weekOrders = data || [];
+    const todayOrders = weekOrders.filter((order) => {
+      const createdAt = new Date(order.created_at);
+      return createdAt >= todayStart && createdAt < tomorrowStart;
+    });
+
+    const sumOrders = (orders) => orders.reduce((sum, order) => sum + getPreTaxOrderAmount(order), 0);
+
+    todayAmount.textContent = formatCurrency(sumOrders(todayOrders));
+    weekAmount.textContent = formatCurrency(sumOrders(weekOrders));
+    todayCount.textContent = `${todayOrders.length} paid order${todayOrders.length === 1 ? "" : "s"} counted`;
+    weekCount.textContent = `${weekOrders.length} paid order${weekOrders.length === 1 ? "" : "s"} counted`;
+    updatedText.textContent = `Updated ${now.toLocaleString()}. Tax and cancelled orders are excluded.`;
+  } catch (error) {
+    todayAmount.textContent = "$0.00";
+    weekAmount.textContent = "$0.00";
+    todayCount.textContent = "Could not load orders";
+    weekCount.textContent = "Could not load orders";
+    updatedText.textContent = "Profit summary could not be loaded.";
+    showToast("error", error.message || "Could not load profit summary.");
+  }
 };
 
 const renderAll = () => {
@@ -532,6 +636,168 @@ const renderAll = () => {
   renderTableMeta();
   renderRecordList();
   renderEditor();
+};
+
+const renderCustomerLookupMessage = (message) => {
+  const lookup = document.getElementById("adminCustomerLookup");
+  if (lookup) lookup.innerHTML = `<p class="muted-copy">${escapeHtml(message)}</p>`;
+};
+
+const loadCustomerOrders = async (supabase, userId) => {
+  const { data: orders, error: orderError } = await supabase
+    .from("orders")
+    .select("order_id, service_type, appointment_date, appointment_time, order_status, payment_method, payment_status, subtotal, tax, total, created_at, updated_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (orderError) throw orderError;
+
+  const orderIds = (orders || []).map((order) => order.order_id);
+  let items = [];
+
+  if (orderIds.length) {
+    const { data, error } = await supabase
+      .from("order_items")
+      .select("order_id, item_type, quantity, line_total")
+      .in("order_id", orderIds)
+      .order("order_item_id", { ascending: true });
+
+    if (error) throw error;
+    items = data || [];
+  }
+
+  const itemsByOrder = items.reduce((groups, item) => {
+    groups[item.order_id] = groups[item.order_id] || [];
+    groups[item.order_id].push(item);
+    return groups;
+  }, {});
+
+  return (orders || []).map((order) => ({
+    ...order,
+    items: itemsByOrder[order.order_id] || []
+  }));
+};
+
+const renderCustomerLookup = async (supabase, showToast, customerId = state.selectedCustomerId) => {
+  const lookup = document.getElementById("adminCustomerLookup");
+  if (!lookup) return;
+
+  if (!state.customerResults.length) {
+    renderCustomerLookupMessage("Search for a customer to view their profile, loyalty points, contact information, and orders.");
+    return;
+  }
+
+  const selectedCustomer =
+    state.customerResults.find((customer) => String(customer.user_id) === String(customerId)) ||
+    state.customerResults[0];
+
+  state.selectedCustomerId = selectedCustomer.user_id;
+  lookup.innerHTML = '<p class="muted-copy">Loading customer details...</p>';
+
+  try {
+    const orders = await loadCustomerOrders(supabase, selectedCustomer.user_id);
+
+    lookup.innerHTML = `
+      <div class="admin-customer-layout">
+        <div class="admin-customer-results">
+          ${state.customerResults
+            .map((customer) => {
+              const isActive = String(customer.user_id) === String(selectedCustomer.user_id);
+              return `
+                <button type="button" class="admin-customer-result ${isActive ? "active" : ""}" data-customer-id="${escapeHtml(customer.user_id)}">
+                  <strong>${escapeHtml(customer.full_name || "Unnamed customer")}</strong>
+                  <p>${escapeHtml(customer.email || "No email")} | ${escapeHtml(customer.phone || "No phone")}</p>
+                </button>
+              `;
+            })
+            .join("")}
+        </div>
+
+        <div>
+          <div class="admin-customer-profile">
+            <span class="eyebrow">Customer Profile</span>
+            <h3>${escapeHtml(selectedCustomer.full_name || "Unnamed customer")}</h3>
+            <div class="admin-customer-profile-grid">
+              <p><strong>User ID:</strong> #${escapeHtml(selectedCustomer.user_id)}</p>
+              <p><strong>Loyalty:</strong> ${escapeHtml(selectedCustomer.loyalty_points || 0)} pts</p>
+              <p><strong>Email:</strong> ${escapeHtml(selectedCustomer.email || "Not available")}</p>
+              <p><strong>Phone:</strong> ${escapeHtml(selectedCustomer.phone || "Not available")}</p>
+              <p><strong>Created:</strong> ${escapeHtml(formatDisplayDateTime(selectedCustomer.created_at))}</p>
+              <p><strong>Orders:</strong> ${orders.length}</p>
+            </div>
+          </div>
+
+          <div class="admin-customer-orders">
+            ${orders.length
+              ? orders
+                  .map((order) => {
+                    const itemSummary = order.items.length
+                      ? order.items
+                          .map((item) => `${Number(item.quantity || 0)}x ${escapeHtml(item.item_type)} (${formatCurrency(item.line_total)})`)
+                          .join(", ")
+                      : escapeHtml(order.service_type || "No item details");
+
+                    return `
+                      <button type="button" class="admin-customer-order" data-edit-order-id="${escapeHtml(order.order_id)}">
+                        <h4>Order #${escapeHtml(order.order_id)}</h4>
+                        <p><strong>Service:</strong> ${escapeHtml(order.service_type || "Not available")}</p>
+                        <p><strong>Items:</strong> ${itemSummary}</p>
+                        <p><strong>Appointment:</strong> ${escapeHtml(order.appointment_date || "No date")} at ${escapeHtml(order.appointment_time || "No time")}</p>
+                        <p><strong>Status:</strong> ${escapeHtml(order.order_status || "Not available")} | <strong>Payment:</strong> ${escapeHtml(order.payment_status || "Not available")}</p>
+                        <p><strong>Subtotal:</strong> ${formatCurrency(order.subtotal)} | <strong>Total:</strong> ${formatCurrency(order.total)}</p>
+                        <p><strong>Placed:</strong> ${escapeHtml(formatDisplayDateTime(order.created_at))}</p>
+                      </button>
+                    `;
+                  })
+                  .join("")
+              : '<p class="muted-copy">No orders found for this customer.</p>'}
+          </div>
+        </div>
+      </div>
+    `;
+  } catch (error) {
+    showToast("error", error.message || "Could not load customer orders.");
+    renderCustomerLookupMessage("Customer details could not be loaded.");
+  }
+};
+
+const searchCustomers = async (supabase, showToast, term) => {
+  const cleanTerm = term.trim();
+
+  if (!cleanTerm) {
+    state.customerResults = [];
+    state.selectedCustomerId = null;
+    renderCustomerLookupMessage("Enter a customer name, email, or phone number to search.");
+    return;
+  }
+
+  renderCustomerLookupMessage("Searching customers...");
+
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("user_id, full_name, phone, email, loyalty_points, created_at, updated_at")
+      .order("full_name", { ascending: true })
+      .limit(250);
+
+    if (error) throw error;
+
+    state.customerResults = (data || []).filter((customer) => matchesCustomerTerm(customer, cleanTerm));
+    state.selectedCustomerId = state.customerResults[0]?.user_id ?? null;
+
+    if (!state.customerResults.length) {
+      renderCustomerLookupMessage("No customers match that search.");
+      return;
+    }
+
+    await renderCustomerLookup(supabase, showToast);
+  } catch (error) {
+    state.customerResults = [];
+    state.selectedCustomerId = null;
+    showToast("error", error.message || "Could not search customers.");
+    renderCustomerLookupMessage("Customer search could not be loaded.");
+  }
 };
 
 const loadRelationOptions = async (supabase, showToast) => {
@@ -590,6 +856,36 @@ const loadTableRows = async (supabase, showToast) => {
   state.isCreating = false;
   state.selectedRowId = state.rows[0]?.[config.primaryKey] ?? null;
   renderAll();
+  await loadProfitSummary(supabase, showToast);
+};
+
+const openOrderInEditor = async (supabase, showToast, orderId) => {
+  const tableSelect = document.getElementById("adminTableSelect");
+
+  state.currentTable = "orders";
+  state.searchColumn = "all";
+  state.searchTerm = "";
+  state.isCreating = false;
+
+  if (tableSelect instanceof HTMLSelectElement) tableSelect.value = "orders";
+
+  await loadRelationOptions(supabase, showToast);
+
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*")
+    .order("order_id", { ascending: false })
+    .limit(250);
+
+  if (error) {
+    showToast("error", error.message || "Could not load orders.");
+    return;
+  }
+
+  state.rows = data || [];
+  state.selectedRowId = orderId;
+  renderAll();
+  document.querySelector(".admin-editor-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 
 const buildPayloadFromForm = (form) => {
@@ -610,6 +906,8 @@ const buildPayloadFromForm = (form) => {
 };
 
 const wireEvents = (supabase, showToast) => {
+  const customerSearchForm = document.getElementById("adminCustomerSearchForm");
+  const customerSearchInput = document.getElementById("adminCustomerSearchInput");
   const tableSelect = document.getElementById("adminTableSelect");
   const searchColumn = document.getElementById("adminSearchColumn");
   const searchInput = document.getElementById("adminSearchInput");
@@ -618,6 +916,27 @@ const wireEvents = (supabase, showToast) => {
   const recordList = document.getElementById("adminRecordList");
   const form = document.getElementById("adminEditorForm");
   const deleteButton = document.getElementById("adminDeleteButton");
+
+  customerSearchForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const term = customerSearchInput instanceof HTMLInputElement ? customerSearchInput.value : "";
+    await searchCustomers(supabase, showToast, term);
+  });
+
+  document.getElementById("adminCustomerLookup")?.addEventListener("click", async (event) => {
+    const orderTarget = event.target instanceof HTMLElement ? event.target.closest("[data-edit-order-id]") : null;
+    if (orderTarget instanceof HTMLElement) {
+      const orderId = orderTarget.dataset.editOrderId;
+      if (orderId) await openOrderInEditor(supabase, showToast, orderId);
+      return;
+    }
+
+    const target = event.target instanceof HTMLElement ? event.target.closest("[data-customer-id]") : null;
+    if (!(target instanceof HTMLElement)) return;
+
+    state.selectedCustomerId = target.dataset.customerId || null;
+    await renderCustomerLookup(supabase, showToast, state.selectedCustomerId);
+  });
 
   tableSelect?.addEventListener("change", async (event) => {
     if (!(event.target instanceof HTMLSelectElement)) return;
@@ -759,6 +1078,7 @@ export const initAdminPortal = async (supabase, sessionState, showToast = fallba
 
   if (tableSelect && !tableSelect.options.length) {
     tableSelect.innerHTML = Object.entries(TABLE_CONFIG)
+      .filter(([key]) => !HIDDEN_TABLES.has(key))
       .map(([key, config]) => `<option value="${key}">${config.label}</option>`)
       .join("");
   }

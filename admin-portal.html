@@ -42,8 +42,51 @@
     </div>
   </section>
 
+  <section class="hero admin-customer-search-section">
+    <div class="hero-card admin-customer-search-card">
+      <div class="admin-customer-search-header">
+        <div>
+          <span class="eyebrow">Customer Lookup</span>
+          <h2>Search a customer profile</h2>
+        </div>
+
+        <form class="admin-customer-search-form" id="adminCustomerSearchForm">
+          <label class="sr-only" for="adminCustomerSearchInput">Search customers</label>
+          <input id="adminCustomerSearchInput" type="search" placeholder="Search by name, email, or phone">
+          <button type="submit" class="btn">Search</button>
+        </form>
+      </div>
+
+      <div class="admin-customer-lookup" id="adminCustomerLookup">
+        <p class="muted-copy">Search for a customer to view their profile, loyalty points, contact information, and orders.</p>
+      </div>
+    </div>
+  </section>
+
   <section class="hero">
     <div class="dashboard-grid admin-portal-grid">
+      <div class="hero-card dashboard-panel admin-profit-panel">
+        <span class="eyebrow">Owner Snapshot</span>
+        <h2>Profit Summary</h2>
+        <p>Pre-tax totals from paid, non-cancelled orders.</p>
+
+        <div class="admin-profit-stack">
+          <div class="admin-profit-card">
+            <span>Today</span>
+            <strong id="adminProfitToday">$0.00</strong>
+            <p id="adminProfitTodayCount">0 orders counted</p>
+          </div>
+
+          <div class="admin-profit-card">
+            <span>This Week</span>
+            <strong id="adminProfitWeek">$0.00</strong>
+            <p id="adminProfitWeekCount">0 orders counted</p>
+          </div>
+        </div>
+
+        <p class="admin-profit-note" id="adminProfitUpdated">Profit summary will load with the portal.</p>
+      </div>
+
       <div class="hero-card dashboard-panel admin-control-panel">
         <span class="eyebrow">Table Browser</span>
         <h2>Find the data you need</h2>
@@ -56,10 +99,6 @@
               <option value="order_items">Order Items</option>
               <option value="status_updates">Status Updates</option>
               <option value="guest_orders">Guest Orders</option>
-              <option value="wallet_transactions">Wallet Transactions</option>
-              <option value="loyalty_transactions">Loyalty Transactions</option>
-              <option value="saved_payment_methods">Saved Payment Methods</option>
-              <option value="admin_users">Admin Users</option>
             </select>
           </div>
 
