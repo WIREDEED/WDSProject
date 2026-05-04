@@ -1,7 +1,7 @@
 (() => {
   const init = async () => {
     const { normalizePageLinks, showToast } = await import("./lib/ui.js");
-    const { bootSupabaseApp } = await import("./lib/supabase-app.js?v=admin-boot-3");
+    const { bootSupabaseApp } = await import("./lib/supabase-app.js?v=admin-boot-4");
 
     normalizePageLinks();
     await bootSupabaseApp({ showToast });
