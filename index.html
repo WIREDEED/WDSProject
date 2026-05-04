@@ -158,6 +158,35 @@
   <footer>
     <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
   </footer>
+  <script>
+    (() => {
+      document.body.classList.add("home-scroll-ready");
+
+      const updateScrollProgress = () => {
+        const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = scrollable > 0 ? window.scrollY / scrollable : 0;
+        document.body.style.setProperty("--home-scroll-progress", String(Math.min(Math.max(progress, 0), 1)));
+        document.body.style.setProperty("--home-hero-shift", `${Math.min(window.scrollY * 0.16, 90)}px`);
+      };
+
+      const revealObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            entry.target.classList.toggle("home-visible", entry.isIntersecting);
+          });
+        },
+        { threshold: 0.18, rootMargin: "0px 0px -8% 0px" }
+      );
+
+      document.querySelectorAll(".home-page .hero-card, .home-page .section-card").forEach((section) => {
+        revealObserver.observe(section);
+      });
+
+      updateScrollProgress();
+      window.addEventListener("scroll", updateScrollProgress, { passive: true });
+      window.addEventListener("resize", updateScrollProgress);
+    })();
+  </script>
  <script src="app.js"></script>
 </body>
 </html>
