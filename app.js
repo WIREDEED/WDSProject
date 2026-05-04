@@ -35,7 +35,7 @@
   };
 
   const showQueryToast = async () => {
-    const { showToast, buildPageUrl, getCurrentFileName } = await import("./lib/ui.js");
+    const { showToast, buildPageUrl, getCurrentFileName } = await import("./ui.js");
     const params = new URLSearchParams(window.location.search);
     const queryError = params.get("error");
     const querySuccess = params.get("success");
@@ -67,8 +67,8 @@
   };
 
   const init = async () => {
-    const { normalizePageLinks, showToast, getCurrentFileName } = await import("./lib/ui.js");
-    const { bootSupabaseApp } = await import("./lib/supabase-app.js?v=admin-boot-4");
+    const { normalizePageLinks, showToast, getCurrentFileName } = await import("./ui.js");
+    const { bootSupabaseApp } = await import("./supabase-app.js");
 
     normalizePageLinks();
     applyInputFormatting();
@@ -83,7 +83,7 @@
 
   init().catch((error) => {
     console.error("App load failed:", error);
-    import("./lib/ui.js").then(({ showToast }) => {
+    import("./ui.js").then(({ showToast }) => {
       showToast("error", error?.message || "The app could not finish loading.");
     });
   });

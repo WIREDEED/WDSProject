@@ -253,7 +253,7 @@
 
       const tax = subtotal * 0.05;
       const total = subtotal + tax;
-      const loyaltyPoints = customerType === "registered" && itemSummary.length ? Math.floor(subtotal * 0.10) : 0;
+      const loyaltyPoints = customerType === "registered" && itemSummary.length ? Math.floor(subtotal / 10) : 0;
 
       document.getElementById("subtotal").textContent = subtotal.toFixed(2);
       document.getElementById("tax").textContent = tax.toFixed(2);
@@ -331,6 +331,12 @@
               <label for="savePaymentMethod">Save Card?</label>
             </div>
             ` : ""}
+          </div>
+        `;
+      } else if (option.value === "saved-card") {
+        details = `
+          <div class="saved-card-checkout-actions">
+            <button type="button" class="btn btn-outline danger-btn" id="removeCheckoutSavedCard">Remove Saved Card</button>
           </div>
         `;
       }
