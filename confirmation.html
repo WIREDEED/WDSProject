@@ -12,16 +12,14 @@
       <span class="eyebrow">Order Confirmed</span>
       <h1 id="thankYouHeading">Thank you</h1>
       <p id="thankYouMessage">See you soon.</p>
-      <p class="redirect-note">Returning you to the main menu...</p>
-      <a href="/" class="btn">Back to Main Menu</a>
+      <p class="redirect-note">Your order has been saved.</p>
+      <div class="button-group thank-you-actions">
+        <a href="/" class="btn">Back to Main Menu</a>
+        <a href="/dashboard" class="btn btn-outline">Go to Dashboard</a>
+      </div>
     </div>
   </main>
 
-  <script>
-    window.setTimeout(() => {
-      window.location.href = "/";
-    }, 3500);
-  </script>
 <script src="app.js"></script>
 </body>
 </html>

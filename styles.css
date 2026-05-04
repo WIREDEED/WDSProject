@@ -1708,6 +1708,7 @@ textarea {
 
 .admin-chart-canvas-wrap {
   position: relative;
+  height: 420px;
   min-height: 420px;
   overflow: hidden;
   border: 1px solid rgba(15, 79, 150, 0.1);
@@ -2188,6 +2189,10 @@ textarea {
 .thank-you-popup .redirect-note {
   font-size: 0.95rem;
   font-weight: 800;
+}
+
+.thank-you-actions {
+  justify-content: center;
 }
 
 /* =========================
