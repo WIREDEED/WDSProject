@@ -7,15 +7,15 @@ import {
   redirectToLogin,
   redirectToAdminLogin,
   clearAdminPortalVerification
-} from "./state.js?v=admin-boot-3";
-import { loadDashboardData } from "./dashboard.js?v=admin-boot-3";
-import { initAdminPortal } from "./admin.js?v=admin-boot-3";
+} from "./state.js";
+import { loadDashboardData } from "./dashboard.js";
+import { initAdminPortal } from "./admin.js";
 import {
   bindLoginForm,
   bindRegisterForm,
   bindAccountForm,
   bindReviewForm
-} from "./handlers.js?v=admin-boot-3";
+} from "./handlers.js";
 
 const clearSupabaseAuthStorage = () => {
   [window.localStorage, window.sessionStorage].forEach((storage) => {
