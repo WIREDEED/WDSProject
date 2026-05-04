@@ -253,7 +253,7 @@
 
       const tax = subtotal * 0.05;
       const total = subtotal + tax;
-      const loyaltyPoints = customerType === "registered" && itemSummary.length ? Math.floor(subtotal / 10) : 0;
+      const loyaltyPoints = customerType === "registered" && itemSummary.length ? Math.floor(subtotal * 0.10) : 0;
 
       document.getElementById("subtotal").textContent = subtotal.toFixed(2);
       document.getElementById("tax").textContent = tax.toFixed(2);
