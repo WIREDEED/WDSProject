@@ -131,16 +131,7 @@
       </div>
 
       <div class="hero-card dashboard-panel admin-editor-panel">
-        <div class="admin-editor-header">
-          <span class="eyebrow">Record Editor</span>
-          <button
-            type="button"
-            class="btn btn-outline admin-editor-new-button"
-            onclick="document.getElementById('adminNewRecordButton')?.click()"
-          >
-            Create New Record
-          </button>
-        </div>
+        <span class="eyebrow">Record Editor</span>
         <h2 id="adminEditorTitle">Select a record</h2>
         <p id="adminEditorLead">Choose a row from the browser to review and update its values here.</p>
 
@@ -156,10 +147,94 @@
     </div>
   </section>
 
+  <section class="hero admin-analytics-section">
+    <div class="hero-card admin-analytics-card">
+      <div class="admin-analytics-header">
+        <div>
+          <span class="eyebrow">Company Performance</span>
+          <h2>Stats Graph</h2>
+          <p>Compare income, order activity, completed orders, and service demand across different time scales.</p>
+        </div>
+
+        <button type="button" class="btn btn-outline" id="adminAnalyticsRefreshButton">Refresh Graph</button>
+      </div>
+
+      <div class="admin-analytics-summary">
+        <div class="admin-analytics-stat">
+          <span>Total Income</span>
+          <strong id="adminAnalyticsRevenue">$0.00</strong>
+        </div>
+        <div class="admin-analytics-stat">
+          <span>Orders</span>
+          <strong id="adminAnalyticsOrders">0</strong>
+        </div>
+        <div class="admin-analytics-stat">
+          <span>Orders Completed</span>
+          <strong id="adminAnalyticsCompleted">0</strong>
+        </div>
+        <div class="admin-analytics-stat">
+          <span>Average Order</span>
+          <strong id="adminAnalyticsAverage">$0.00</strong>
+        </div>
+      </div>
+
+      <div class="admin-analytics-layout">
+        <aside class="admin-analytics-controls">
+          <div class="field-group">
+            <label for="adminAnalyticsTimeScale">X Axis Time Scale</label>
+            <select id="adminAnalyticsTimeScale">
+              <option value="hours">Hours: 9 AM-5 PM</option>
+              <option value="days" selected>Days</option>
+              <option value="weeks">Weeks</option>
+              <option value="months">Months</option>
+              <option value="years">Years</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="adminAnalyticsMetric">Service Filter</label>
+            <select id="adminAnalyticsMetric">
+              <option value="allServices">All Services</option>
+              <option value="dryCleaning">Dry Cleaning</option>
+              <option value="washFold">Wash and Fold</option>
+              <option value="ironing">Ironing</option>
+              <option value="beddingLinen">Bedding and Linen</option>
+              <option value="curtainCleaning">Curtain Cleaning</option>
+              <option value="leatherCleaning">Leather Cleaning</option>
+              <option value="mixedOrder">Mixed Order</option>
+            </select>
+          </div>
+
+          <div class="admin-analytics-button-list" id="adminAnalyticsMetricButtons">
+            <button type="button" class="active" data-analytics-metric="income">Income</button>
+            <button type="button" data-analytics-metric="orders">Orders</button>
+            <button type="button" data-analytics-metric="completedOrders">Completed</button>
+            <button type="button" data-analytics-metric="averageOrder">Avg Order</button>
+          </div>
+        </aside>
+
+        <div class="admin-chart-panel">
+          <div class="admin-chart-heading">
+            <div>
+              <strong id="adminAnalyticsTitle">Income by days</strong>
+              <p id="adminAnalyticsSubtitle">Loading graph data...</p>
+            </div>
+            <span class="detail-pill" id="adminAnalyticsTotal">$0.00 total</span>
+          </div>
+
+          <div class="admin-chart-canvas-wrap">
+            <canvas id="adminAnalyticsChart" width="980" height="420" aria-label="Admin company stats graph"></canvas>
+            <div class="admin-chart-tooltip" id="adminAnalyticsTooltip" hidden></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <footer>
     <p>(c) 2026 WDS: Wash &amp; Drycleaning Services | IT461L Project</p>
   </footer>
 
-  <script src="admin-app.js?v=admin-boot-5"></script>
+  <script src="admin-app.js?v=admin-boot-8"></script>
 </body>
 </html>

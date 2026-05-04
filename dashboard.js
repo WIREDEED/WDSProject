@@ -57,26 +57,6 @@ export const loadDashboardData = async (supabase, sessionState, showToast) => {
       if (dateDifference !== 0) return dateDifference;
       return Number(firstOrder.order_id || 0) - Number(secondOrder.order_id || 0);
     });
-    const activeOrderIds = activeOrderList.map((order) => order.order_id);
-    let activeOrderItems = [];
-
-    if (activeOrderIds.length) {
-      const { data, error } = await supabase
-        .from("order_items")
-        .select("order_id, item_type, quantity, line_total")
-        .in("order_id", activeOrderIds)
-        .order("order_item_id", { ascending: true });
-
-      if (error) throw error;
-      activeOrderItems = data || [];
-    }
-
-    const activeItemsByOrder = activeOrderItems.reduce((groups, item) => {
-      groups[item.order_id] = groups[item.order_id] || [];
-      groups[item.order_id].push(item);
-      return groups;
-    }, {});
-
     const activeOrder = activeOrderList[0] || null;
     let timeline = [];
 
@@ -127,28 +107,11 @@ export const loadDashboardData = async (supabase, sessionState, showToast) => {
               const orderStatus = String(order.order_status || "Drop off");
               const paymentMethod = String(order.payment_method || "pending").replace("-", " ");
               const canCancelOrder = orderStatus.toLowerCase() === "drop off";
-              const items = activeItemsByOrder[order.order_id] || [];
-              const itemCount = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
-              const itemSummaryMarkup = items.length
-                ? `
-                    <p><strong>Items:</strong> ${itemCount} item${itemCount === 1 ? "" : "s"}</p>
-                    <ul class="current-order-items">
-                      ${items
-                        .map(
-                          (item) =>
-                            `<li>${Number(item.quantity || 0)}x ${escapeHtml(item.item_type)}</li>`
-                        )
-                        .join("")}
-                    </ul>
-                  `
-                : `<p><strong>Items:</strong> Item details are not available yet.</p>`;
 
               return `
                 <div class="current-order-card">
                   <h3>Order #${order.order_id}</h3>
                   <p>${escapeHtml(order.service_type)} scheduled for ${new Date(order.appointment_date).toLocaleDateString()} at ${escapeHtml(order.appointment_time)}.</p>
-                  <p><strong>Service:</strong> ${escapeHtml(order.service_type || "Not available")}</p>
-                  ${itemSummaryMarkup}
                   <p><strong>Placed:</strong> ${escapeHtml(formatDateTime(order.created_at))}</p>
                   <p><strong>Status:</strong> <span class="status-badge ${statusClass}">${escapeHtml(orderStatus)}</span></p>
                   <p><strong>Payment:</strong> ${escapeHtml(paymentMethod)} | <strong>Total:</strong> $${Number(order.total || 0).toFixed(2)}</p>

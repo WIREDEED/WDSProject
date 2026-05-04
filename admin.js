@@ -60,10 +60,13 @@ const TABLE_CONFIG = {
         type: "select",
         required: true,
         options: [
-          { value: "Wash and Fold", label: "Wash and Fold" },
           { value: "Dry Cleaning", label: "Dry Cleaning" },
-          { value: "Wash and Iron", label: "Wash and Iron" },
-          { value: "Specialty Cleaning", label: "Specialty Cleaning" }
+          { value: "Wash and Fold", label: "Wash and Fold" },
+          { value: "Ironing", label: "Ironing" },
+          { value: "Bedding and Linen", label: "Bedding and Linen" },
+          { value: "Curtain Cleaning", label: "Curtain Cleaning" },
+          { value: "Leather Cleaning", label: "Leather Cleaning" },
+          { value: "Mixed Order", label: "Mixed Order" }
         ]
       },
       { key: "appointment_date", label: "Appointment Date", type: "date", required: true },
@@ -254,7 +257,17 @@ const state = {
   relationOptions: {},
   customerResults: [],
   selectedCustomerId: null,
-  isLocalAdminMode: false
+  isLocalAdminMode: false,
+  analytics: {
+    orders: [],
+    orderItems: [],
+    metric: "income",
+    serviceFilter: "allServices",
+    timeScale: "days",
+    points: [],
+    hoveredIndex: null,
+    loaded: false
+  }
 };
 
 const getConfig = () => TABLE_CONFIG[state.currentTable];
@@ -345,6 +358,15 @@ const matchesCustomerTerm = (customer, term) => {
     .toLowerCase();
 
   return searchText.includes(term.toLowerCase());
+};
+
+const formatExactTenDigitPhoneSearch = (value) => {
+  const rawValue = String(value || "");
+  const digits = rawValue.replace(/\D/g, "");
+  if (/^\d{10}$/.test(rawValue)) return `(${rawValue.slice(0, 3)}) ${rawValue.slice(3, 6)}-${rawValue.slice(6)}`;
+  if (/^\(\d{3}\) \d{3}-\d{4}$/.test(rawValue)) return rawValue;
+  if (/^[\d()\-\s]+$/.test(rawValue)) return digits;
+  return rawValue.replace(/[()\-\s]/g, "");
 };
 
 const getSelectedRow = () => {
@@ -769,6 +791,365 @@ const loadProfitSummary = async (supabase, showToast) => {
   }
 };
 
+const ANALYTICS_METRICS = {
+  income: { label: "Income", unit: "money", summary: "total order income, excluding cancelled orders" },
+  pretaxIncome: { label: "Pre-Tax Income", unit: "money", summary: "subtotal income before tax from non-cancelled orders" },
+  orders: { label: "Orders Created", unit: "count", summary: "non-cancelled orders created" },
+  paidOrders: { label: "Paid Orders", unit: "count", summary: "paid, non-cancelled orders" },
+  completedOrders: { label: "Orders Completed", unit: "count", summary: "orders marked completed" },
+  averageOrder: { label: "Average Order Value", unit: "money", summary: "average value per non-cancelled order" }
+};
+
+const ANALYTICS_SERVICE_FILTERS = {
+  allServices: { label: "All Services", serviceType: "" },
+  dryCleaning: { label: "Dry Cleaning", serviceType: "dry cleaning" },
+  washFold: { label: "Wash and Fold", serviceType: "wash and fold" },
+  ironing: { label: "Ironing", serviceType: "ironing" },
+  beddingLinen: { label: "Bedding and Linen", serviceType: "bedding and linen" },
+  curtainCleaning: { label: "Curtain Cleaning", serviceType: "curtain cleaning" },
+  leatherCleaning: { label: "Leather Cleaning", serviceType: "leather cleaning" },
+  mixedOrder: { label: "Mixed Order", serviceType: "mixed order" }
+};
+
+const addDays = (date, days) => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+};
+
+const getRowDate = (row) => {
+  const parsed = new Date(row.created_at || row.updated_at || row.appointment_date || "");
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const getAnalyticsWeekStart = (date) => {
+  const start = getLocalDayStart(date);
+  const day = start.getDay();
+  start.setDate(start.getDate() - (day === 0 ? 6 : day - 1));
+  return start;
+};
+
+const buildAnalyticsBuckets = (scale) => {
+  const now = new Date();
+
+  if (scale === "hours") {
+    return Array.from({ length: 9 }, (_, index) => {
+      const hour = 9 + index;
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour);
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour + 1);
+      const displayHour = hour > 12 ? hour - 12 : hour;
+      return { label: `${displayHour} ${hour >= 12 ? "PM" : "AM"}`, start, end };
+    });
+  }
+
+  if (scale === "weeks") {
+    const currentWeek = getAnalyticsWeekStart(now);
+    return Array.from({ length: 10 }, (_, index) => {
+      const start = addDays(currentWeek, (index - 9) * 7);
+      return { label: `${start.getMonth() + 1}/${start.getDate()}`, start, end: addDays(start, 7) };
+    });
+  }
+
+  if (scale === "months") {
+    return Array.from({ length: 12 }, (_, index) => {
+      const start = new Date(now.getFullYear(), now.getMonth() - 11 + index, 1);
+      const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+      return { label: start.toLocaleString(undefined, { month: "short" }), start, end };
+    });
+  }
+
+  if (scale === "years") {
+    return Array.from({ length: 5 }, (_, index) => {
+      const year = now.getFullYear() - 4 + index;
+      return { label: String(year), start: new Date(year, 0, 1), end: new Date(year + 1, 0, 1) };
+    });
+  }
+
+  const today = getLocalDayStart(now);
+  return Array.from({ length: 14 }, (_, index) => {
+    const start = addDays(today, index - 13);
+    return { label: `${start.getMonth() + 1}/${start.getDate()}`, start, end: addDays(start, 1) };
+  });
+};
+
+const isDateInBucket = (date, bucket) => date && date >= bucket.start && date < bucket.end;
+
+const getAnalyticsOrderSet = () =>
+  state.analytics.orders.filter((order) => String(order.order_status || "").toLowerCase() !== "cancelled");
+
+const orderMatchesAnalyticsService = (order, serviceFilter = state.analytics.serviceFilter) => {
+  const filter = ANALYTICS_SERVICE_FILTERS[serviceFilter];
+  if (!filter || !filter.serviceType) return true;
+  const service = String(order.service_type || "").trim().toLowerCase();
+  return service === filter.serviceType;
+};
+
+const formatAnalyticsValue = (value, metricKey = state.analytics.metric) =>
+  ANALYTICS_METRICS[metricKey]?.unit === "money" ? formatCurrency(value) : Number(value || 0).toLocaleString();
+
+const getAnalyticsPercentChange = (currentValue, previousValue) => {
+  const current = Number(currentValue || 0);
+  const previous = Number(previousValue || 0);
+
+  if (previous === 0 && current === 0) {
+    return { className: "neutral", text: "0%" };
+  }
+
+  if (previous === 0) {
+    return { className: "positive", text: "+100%" };
+  }
+
+  const percent = ((current - previous) / Math.abs(previous)) * 100;
+  const rounded = Math.abs(percent) < 0.05 ? 0 : Number(percent.toFixed(1));
+
+  if (rounded === 0) {
+    return { className: "neutral", text: "0%" };
+  }
+
+  return {
+    className: rounded > 0 ? "positive" : "negative",
+    text: `${rounded > 0 ? "+" : ""}${rounded}%`
+  };
+};
+
+const buildAnalyticsPoints = () => {
+  const metric = state.analytics.metric;
+  const buckets = buildAnalyticsBuckets(state.analytics.timeScale);
+  const activeOrders = getAnalyticsOrderSet();
+
+  return buckets.map((bucket) => {
+    const bucketOrders = activeOrders.filter((order) => isDateInBucket(getRowDate(order), bucket));
+    const orders = bucketOrders.filter((order) => orderMatchesAnalyticsService(order));
+    const income = orders.reduce((sum, order) => sum + Number(order.total || 0), 0);
+    const pretaxIncome = orders.reduce((sum, order) => sum + getPreTaxOrderAmount(order), 0);
+
+    let value = income;
+    if (metric === "pretaxIncome") value = pretaxIncome;
+    if (metric === "orders") value = orders.length;
+    if (metric === "paidOrders") value = orders.filter((order) => order.payment_status === "Paid").length;
+    if (metric === "completedOrders") value = orders.filter((order) => order.order_status === "Completed").length;
+    if (metric === "averageOrder") value = orders.length ? income / orders.length : 0;
+
+    return {
+      ...bucket,
+      value,
+      serviceOrderCount: orders.length,
+      serviceIncome: income
+    };
+  });
+};
+
+const renderAnalyticsSummary = () => {
+  const orders = getAnalyticsOrderSet();
+  const income = orders.reduce((sum, order) => sum + Number(order.total || 0), 0);
+  const completedOrders = orders.filter((order) => order.order_status === "Completed").length;
+  const average = orders.length ? income / orders.length : 0;
+
+  const revenueEl = document.getElementById("adminAnalyticsRevenue");
+  const ordersEl = document.getElementById("adminAnalyticsOrders");
+  const completedEl = document.getElementById("adminAnalyticsCompleted");
+  const averageEl = document.getElementById("adminAnalyticsAverage");
+
+  if (revenueEl) revenueEl.textContent = formatCurrency(income);
+  if (ordersEl) ordersEl.textContent = orders.length.toLocaleString();
+  if (completedEl) completedEl.textContent = completedOrders.toLocaleString();
+  if (averageEl) averageEl.textContent = formatCurrency(average);
+};
+
+const drawAnalyticsChart = () => {
+  const canvas = document.getElementById("adminAnalyticsChart");
+  if (!(canvas instanceof HTMLCanvasElement)) return;
+
+  const wrap = canvas.parentElement;
+  const ctx = canvas.getContext("2d");
+  if (!ctx || !wrap) return;
+
+  const ratio = window.devicePixelRatio || 1;
+  const width = Math.max(620, Math.floor(wrap.clientWidth));
+  const height = Math.max(360, Math.floor(wrap.clientHeight || 420));
+  canvas.width = width * ratio;
+  canvas.height = height * ratio;
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+
+  const points = state.analytics.points;
+  const metric = ANALYTICS_METRICS[state.analytics.metric] || ANALYTICS_METRICS.income;
+  const maxValue = Math.max(...points.map((point) => point.value), 0);
+  const niceMax = maxValue <= 0 ? 1 : maxValue * 1.16;
+  const plot = { left: 76, right: 28, top: 26, bottom: 66 };
+  const plotWidth = width - plot.left - plot.right;
+  const plotHeight = height - plot.top - plot.bottom;
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.strokeStyle = "rgba(15, 79, 150, 0.12)";
+  ctx.fillStyle = "#58708d";
+  ctx.lineWidth = 1;
+  ctx.font = "12px Merriweather, Georgia, serif";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+
+  for (let index = 0; index <= 4; index += 1) {
+    const y = plot.top + plotHeight * (index / 4);
+    const value = niceMax * (1 - index / 4);
+    ctx.beginPath();
+    ctx.moveTo(plot.left, y);
+    ctx.lineTo(width - plot.right, y);
+    ctx.stroke();
+    ctx.fillText(metric.unit === "money" ? `$${Math.round(value)}` : Math.round(value), plot.left - 12, y);
+  }
+
+  if (!points.length) return;
+
+  const slot = plotWidth / points.length;
+  const barWidth = Math.max(18, Math.min(56, slot * 0.58));
+  const linePoints = [];
+
+  points.forEach((point, index) => {
+    const x = plot.left + slot * index + slot / 2;
+    const barHeight = (point.value / niceMax) * plotHeight;
+    const y = plot.top + plotHeight - barHeight;
+    const isHovered = state.analytics.hoveredIndex === index;
+
+    linePoints.push({ x, y });
+
+    const gradient = ctx.createLinearGradient(0, y, 0, plot.top + plotHeight);
+    gradient.addColorStop(0, isHovered ? "#0f4f96" : "#4b86d8");
+    gradient.addColorStop(1, isHovered ? "#87b8ef" : "#cfdffb");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x - barWidth / 2, y, barWidth, Math.max(2, barHeight));
+
+    ctx.fillStyle = isHovered ? "#0f4f96" : "#58708d";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(point.label, x, plot.top + plotHeight + 18);
+  });
+
+  ctx.strokeStyle = "#247a4d";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  linePoints.forEach((point, index) => {
+    if (index === 0) ctx.moveTo(point.x, point.y);
+    else ctx.lineTo(point.x, point.y);
+  });
+  ctx.stroke();
+
+  linePoints.forEach((point, index) => {
+    ctx.beginPath();
+    ctx.fillStyle = state.analytics.hoveredIndex === index ? "#0f4f96" : "#247a4d";
+    ctx.arc(point.x, point.y, state.analytics.hoveredIndex === index ? 6 : 4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+};
+
+const renderAnalytics = () => {
+  const metricSelect = document.getElementById("adminAnalyticsMetric");
+  const timeScaleSelect = document.getElementById("adminAnalyticsTimeScale");
+  const title = document.getElementById("adminAnalyticsTitle");
+  const subtitle = document.getElementById("adminAnalyticsSubtitle");
+  const total = document.getElementById("adminAnalyticsTotal");
+  const metric = ANALYTICS_METRICS[state.analytics.metric] || ANALYTICS_METRICS.income;
+  const serviceFilter = ANALYTICS_SERVICE_FILTERS[state.analytics.serviceFilter];
+
+  state.analytics.points = buildAnalyticsPoints();
+  const visibleValues = state.analytics.points.filter((point) => point.value > 0);
+  const totalValue =
+    state.analytics.metric === "averageOrder"
+      ? visibleValues.reduce((sum, point) => sum + point.value, 0) / Math.max(visibleValues.length, 1)
+      : state.analytics.points.reduce((sum, point) => sum + point.value, 0);
+
+  if (metricSelect instanceof HTMLSelectElement) metricSelect.value = state.analytics.serviceFilter;
+  if (timeScaleSelect instanceof HTMLSelectElement) timeScaleSelect.value = state.analytics.timeScale;
+  if (title) title.textContent = `${metric.label} by ${state.analytics.timeScale}${serviceFilter ? ` - ${serviceFilter.label}` : ""}`;
+  if (subtitle) {
+    subtitle.textContent = state.analytics.loaded
+      ? `Showing ${metric.summary} for ${serviceFilter?.label || "the selected service"}. Change the time scale, service filter, or button to explore another view.`
+      : "Loading graph data...";
+  }
+  if (total) {
+    total.textContent = `${formatAnalyticsValue(totalValue)} ${state.analytics.metric === "averageOrder" ? "average" : "total"}`;
+  }
+
+  document.querySelectorAll("[data-analytics-metric]").forEach((button) => {
+    button.classList.toggle("active", button.getAttribute("data-analytics-metric") === state.analytics.metric);
+  });
+
+  renderAnalyticsSummary();
+  drawAnalyticsChart();
+};
+
+const updateAnalyticsHover = (event) => {
+  const canvas = document.getElementById("adminAnalyticsChart");
+  const tooltip = document.getElementById("adminAnalyticsTooltip");
+  if (!(canvas instanceof HTMLCanvasElement) || !(tooltip instanceof HTMLElement) || !state.analytics.points.length) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const plotLeft = 76;
+  const plotRight = 28;
+  const slot = (rect.width - plotLeft - plotRight) / state.analytics.points.length;
+  const index = Math.max(0, Math.min(state.analytics.points.length - 1, Math.floor((x - plotLeft) / slot)));
+  const point = state.analytics.points[index];
+  const previousPoint = index > 0 ? state.analytics.points[index - 1] : null;
+  const metric = ANALYTICS_METRICS[state.analytics.metric] || ANALYTICS_METRICS.income;
+  const serviceFilter = ANALYTICS_SERVICE_FILTERS[state.analytics.serviceFilter];
+  const change = previousPoint
+    ? getAnalyticsPercentChange(point.value, previousPoint.value)
+    : { className: "neutral", text: "0%" };
+
+  state.analytics.hoveredIndex = index;
+  tooltip.hidden = false;
+  tooltip.style.left = `${Math.min(rect.width - 180, Math.max(12, x + 12))}px`;
+  tooltip.style.top = `${Math.max(12, event.clientY - rect.top - 46)}px`;
+  tooltip.innerHTML = `
+    <strong>${escapeHtml(point.label)}</strong>
+    <span>${escapeHtml(metric.label)}: ${escapeHtml(formatAnalyticsValue(point.value))}</span>
+    <span>${escapeHtml(serviceFilter?.label || "Service")} Orders: ${escapeHtml(Number(point.serviceOrderCount || 0).toLocaleString())}</span>
+    <span>Income: ${escapeHtml(formatCurrency(point.serviceIncome || 0))}</span>
+    <span class="analytics-change ${change.className}">${escapeHtml(change.text)}</span>
+  `;
+  drawAnalyticsChart();
+};
+
+const clearAnalyticsHover = () => {
+  const tooltip = document.getElementById("adminAnalyticsTooltip");
+  state.analytics.hoveredIndex = null;
+  if (tooltip instanceof HTMLElement) tooltip.hidden = true;
+  drawAnalyticsChart();
+};
+
+const loadAnalyticsData = async (supabase, showToast) => {
+  const chart = document.getElementById("adminAnalyticsChart");
+  if (!chart) return;
+
+  try {
+    const [{ data: orders, error: ordersError }, { data: orderItems, error: itemsError }] = await Promise.all([
+      supabase
+        .from("orders")
+        .select("order_id, service_type, order_status, payment_status, subtotal, tax, total, created_at, updated_at")
+        .order("created_at", { ascending: false })
+        .limit(1000),
+      supabase
+        .from("order_items")
+        .select("order_item_id, order_id, item_type, quantity, line_total, created_at")
+        .order("created_at", { ascending: false })
+        .limit(1000)
+    ]);
+
+    if (ordersError || itemsError) throw ordersError || itemsError;
+
+    state.analytics.orders = orders || [];
+    state.analytics.orderItems = orderItems || [];
+    state.analytics.loaded = true;
+    renderAnalytics();
+  } catch (error) {
+    showToast("error", error.message || "Could not load graph data.");
+  }
+};
+
 const renderAll = () => {
   renderSearchColumns();
   renderTableMeta();
@@ -1157,11 +1538,24 @@ const wireEvents = (supabase, showToast) => {
   const recordList = document.getElementById("adminRecordList");
   const form = document.getElementById("adminEditorForm");
   const deleteButton = document.getElementById("adminDeleteButton");
+  const analyticsRefreshButton = document.getElementById("adminAnalyticsRefreshButton");
+  const analyticsMetricSelect = document.getElementById("adminAnalyticsMetric");
+  const analyticsTimeScaleSelect = document.getElementById("adminAnalyticsTimeScale");
+  const analyticsMetricButtons = document.getElementById("adminAnalyticsMetricButtons");
+  const analyticsChart = document.getElementById("adminAnalyticsChart");
 
   customerSearchForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const term = customerSearchInput instanceof HTMLInputElement ? customerSearchInput.value : "";
     await searchCustomers(supabase, showToast, term);
+  });
+
+  customerSearchInput?.addEventListener("input", (event) => {
+    if (!(event.target instanceof HTMLInputElement)) return;
+    const formattedValue = formatExactTenDigitPhoneSearch(event.target.value);
+    if (formattedValue !== event.target.value) {
+      event.target.value = formattedValue;
+    }
   });
 
   document.getElementById("adminCustomerLookup")?.addEventListener("click", async (event) => {
@@ -1206,8 +1600,37 @@ const wireEvents = (supabase, showToast) => {
 
   refreshButton?.addEventListener("click", async () => {
     await loadTableRows(supabase, showToast);
+    await loadAnalyticsData(supabase, showToast);
     showToast("success", `${getConfig().label} refreshed.`);
   });
+
+  analyticsRefreshButton?.addEventListener("click", async () => {
+    await loadAnalyticsData(supabase, showToast);
+    showToast("success", "Graph refreshed.");
+  });
+
+  analyticsMetricSelect?.addEventListener("change", (event) => {
+    if (!(event.target instanceof HTMLSelectElement)) return;
+    state.analytics.serviceFilter = event.target.value;
+    renderAnalytics();
+  });
+
+  analyticsTimeScaleSelect?.addEventListener("change", (event) => {
+    if (!(event.target instanceof HTMLSelectElement)) return;
+    state.analytics.timeScale = event.target.value;
+    renderAnalytics();
+  });
+
+  analyticsMetricButtons?.addEventListener("click", (event) => {
+    const target = event.target instanceof HTMLElement ? event.target.closest("[data-analytics-metric]") : null;
+    if (!(target instanceof HTMLElement)) return;
+    state.analytics.metric = target.getAttribute("data-analytics-metric") || state.analytics.metric;
+    renderAnalytics();
+  });
+
+  analyticsChart?.addEventListener("mousemove", updateAnalyticsHover);
+  analyticsChart?.addEventListener("mouseleave", clearAnalyticsHover);
+  window.addEventListener("resize", drawAnalyticsChart);
 
   newButton?.addEventListener("click", async () => {
     if (["orders", "order_items"].includes(state.currentTable)) {
@@ -1259,6 +1682,7 @@ const wireEvents = (supabase, showToast) => {
         state.isCreating = false;
         showToast("success", "Order record created.");
         await loadTableRows(supabase, showToast);
+        await loadAnalyticsData(supabase, showToast);
         return;
       }
 
@@ -1288,6 +1712,7 @@ const wireEvents = (supabase, showToast) => {
       }
 
       await loadTableRows(supabase, showToast);
+      await loadAnalyticsData(supabase, showToast);
     } catch (error) {
       showToast("error", error.message || `Could not save ${config.label}.`);
     }
@@ -1315,6 +1740,7 @@ const wireEvents = (supabase, showToast) => {
 
       showToast("success", `${config.label} record deleted.`);
       await loadTableRows(supabase, showToast);
+      await loadAnalyticsData(supabase, showToast);
     } catch (error) {
       showToast("error", error.message || `Could not delete ${config.label}.`);
     }
@@ -1353,5 +1779,7 @@ export const initAdminPortal = async (supabase, sessionState, showToast = fallba
   state.isLocalAdminMode = Boolean(sessionState.adminProfile?.isLocalFallback);
   state.currentTable = tableSelect?.value || state.currentTable;
   renderAll();
+  renderAnalytics();
+  await loadAnalyticsData(supabase, showToast);
   await loadTableRows(supabase, showToast);
 };
