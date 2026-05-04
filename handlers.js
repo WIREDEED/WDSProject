@@ -544,42 +544,6 @@ export const bindReviewForm = (supabase, sessionState, showToast) => {
     paymentHint.classList.remove("hidden");
   }
 
-  const removeCheckoutSavedCardButton = document.getElementById("removeCheckoutSavedCard");
-
-  if (removeCheckoutSavedCardButton instanceof HTMLButtonElement && sessionState.loggedIn && sessionState.profile) {
-    removeCheckoutSavedCardButton.addEventListener("click", async () => {
-      const shouldRemove = window.confirm("Remove this saved card from your account?");
-      if (!shouldRemove) return;
-
-      removeCheckoutSavedCardButton.disabled = true;
-
-      try {
-        await removeSavedCardRecords(supabase, sessionState.profile.userId);
-        sessionState.savedPayment = null;
-
-        const savedCardOption = paymentOptions?.querySelector('input[value="saved-card"]')?.closest(".payment-option");
-        const nextPaymentOption = paymentOptions?.querySelector('input[value="new-card"]') || paymentOptions?.querySelector('input[value="cash"]');
-
-        if (nextPaymentOption instanceof HTMLInputElement) {
-          nextPaymentOption.checked = true;
-          nextPaymentOption.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-
-        savedCardOption?.remove();
-
-        if (paymentHint) {
-          paymentHint.textContent = "Your saved card was removed. Choose a new card or cash to finish this order.";
-          paymentHint.classList.remove("hidden");
-        }
-
-        showToast("success", "Your saved card was removed.");
-      } catch (_error) {
-        removeCheckoutSavedCardButton.disabled = false;
-        showToast("error", "Could not remove your saved card right now.");
-      }
-    });
-  }
-
   bindLoyaltyDiscountOptions(sessionState);
 
   reviewForm.addEventListener("submit", async (event) => {
@@ -673,7 +637,7 @@ export const bindReviewForm = (supabase, sessionState, showToast) => {
           appointment_date: date,
           appointment_time: time,
           notes: notes || null,
-          order_status: "Drop off",
+          order_status: "Started",
           payment_method: paymentMethod,
           payment_status: paymentMethod === "cash" ? "Pending" : "Paid",
           subtotal,
@@ -701,7 +665,7 @@ export const bindReviewForm = (supabase, sessionState, showToast) => {
 
       const { error: statusError } = await supabase.from("status_updates").insert({
         order_id: orderId,
-        status: "Drop off",
+        status: "Started",
         note: "Order placed by customer",
         updated_by: customerType === "registered" ? "Customer Account" : "Guest Checkout"
       });
@@ -709,7 +673,7 @@ export const bindReviewForm = (supabase, sessionState, showToast) => {
       if (statusError) throw statusError;
 
       if (customerType === "registered" && sessionState.profile) {
-        const earnedPoints = Math.floor(subtotal * 0.10);
+        const earnedPoints = 10;
         const redeemedPoints = discountTier ? discountTier.points : 0;
         const updates = { loyalty_points: currentLoyaltyPoints - redeemedPoints + earnedPoints };
 

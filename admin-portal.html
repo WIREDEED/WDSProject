@@ -42,51 +42,93 @@
     </div>
   </section>
 
-  <section class="hero admin-customer-search-section">
-    <div class="hero-card admin-customer-search-card">
-      <div class="admin-customer-search-header">
+  <section class="hero">
+    <div class="hero-card admin-analytics-panel">
+      <div class="admin-analytics-header">
         <div>
-          <span class="eyebrow">Customer Lookup</span>
-          <h2>Search a customer profile</h2>
+          <span class="eyebrow">Company Stats</span>
+          <h2>Performance graph</h2>
+          <p>Track revenue, order volume, item sales, and service demand over the time scale that matters right now.</p>
         </div>
 
-        <form class="admin-customer-search-form" id="adminCustomerSearchForm">
-          <label class="sr-only" for="adminCustomerSearchInput">Search customers</label>
-          <input id="adminCustomerSearchInput" type="search" placeholder="Search by name, email, or phone">
-          <button type="submit" class="btn">Search</button>
-        </form>
+        <div class="button-group admin-analytics-actions">
+          <button type="button" class="btn btn-outline" id="adminAnalyticsRefreshButton">Refresh Stats</button>
+        </div>
       </div>
 
-      <div class="admin-customer-lookup" id="adminCustomerLookup">
-        <p class="muted-copy">Search for a customer to view their profile, loyalty points, contact information, and orders.</p>
+      <div class="admin-stat-grid" id="adminStatGrid">
+        <div class="admin-stat-card">
+          <span>Total Revenue</span>
+          <strong id="adminStatRevenue">$0.00</strong>
+        </div>
+        <div class="admin-stat-card">
+          <span>Orders</span>
+          <strong id="adminStatOrders">0</strong>
+        </div>
+        <div class="admin-stat-card">
+          <span>Items Sold</span>
+          <strong id="adminStatItems">0</strong>
+        </div>
+        <div class="admin-stat-card">
+          <span>Avg Order</span>
+          <strong id="adminStatAverage">$0.00</strong>
+        </div>
+      </div>
+
+      <div class="admin-analytics-grid">
+        <aside class="admin-chart-controls" aria-label="Graph controls">
+          <div class="field-group">
+            <label for="adminTimeScaleSelect">X Axis Time Scale</label>
+            <select id="adminTimeScaleSelect">
+              <option value="hours">Hours: 9 AM-5 PM</option>
+              <option value="days" selected>Days</option>
+              <option value="weeks">Weeks</option>
+              <option value="months">Months</option>
+              <option value="years">Years</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="adminMetricSelect">Y Axis Variable</label>
+            <select id="adminMetricSelect">
+              <option value="revenue">Income</option>
+              <option value="orders">Orders Created</option>
+              <option value="items">Items Sold</option>
+              <option value="averageOrder">Average Order Value</option>
+              <option value="washFold">Wash and Fold Orders</option>
+              <option value="dryCleaning">Dry Cleaning Orders</option>
+              <option value="washIron">Wash and Iron Orders</option>
+              <option value="specialty">Specialty Cleaning Orders</option>
+            </select>
+          </div>
+
+          <div class="admin-metric-buttons" id="adminMetricButtons">
+            <button type="button" class="active" data-admin-metric="revenue">Income</button>
+            <button type="button" data-admin-metric="orders">Orders</button>
+            <button type="button" data-admin-metric="items">Items Sold</button>
+            <button type="button" data-admin-metric="averageOrder">Avg Order</button>
+          </div>
+        </aside>
+
+        <div class="admin-chart-shell">
+          <div class="admin-chart-title-row">
+            <div>
+              <strong id="adminChartTitle">Income by day</strong>
+              <p id="adminChartSubtitle">Loading company stats...</p>
+            </div>
+            <span class="detail-pill" id="adminChartTotal">$0.00 total</span>
+          </div>
+          <div class="admin-chart-wrap">
+            <canvas id="adminStatsChart" width="980" height="420" aria-label="Company performance graph"></canvas>
+            <div class="admin-chart-tooltip" id="adminChartTooltip" hidden></div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
   <section class="hero">
     <div class="dashboard-grid admin-portal-grid">
-      <div class="hero-card dashboard-panel admin-profit-panel">
-        <span class="eyebrow">Owner Snapshot</span>
-        <h2>Profit Summary</h2>
-        <p>Pre-tax totals from paid, non-cancelled orders.</p>
-
-        <div class="admin-profit-stack">
-          <div class="admin-profit-card">
-            <span>Today</span>
-            <strong id="adminProfitToday">$0.00</strong>
-            <p id="adminProfitTodayCount">0 orders counted</p>
-          </div>
-
-          <div class="admin-profit-card">
-            <span>This Week</span>
-            <strong id="adminProfitWeek">$0.00</strong>
-            <p id="adminProfitWeekCount">0 orders counted</p>
-          </div>
-        </div>
-
-        <p class="admin-profit-note" id="adminProfitUpdated">Profit summary will load with the portal.</p>
-      </div>
-
       <div class="hero-card dashboard-panel admin-control-panel">
         <span class="eyebrow">Table Browser</span>
         <h2>Find the data you need</h2>
@@ -99,6 +141,10 @@
               <option value="order_items">Order Items</option>
               <option value="status_updates">Status Updates</option>
               <option value="guest_orders">Guest Orders</option>
+              <option value="wallet_transactions">Wallet Transactions</option>
+              <option value="loyalty_transactions">Loyalty Transactions</option>
+              <option value="saved_payment_methods">Saved Payment Methods</option>
+              <option value="admin_users">Admin Users</option>
             </select>
           </div>
 

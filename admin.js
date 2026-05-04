@@ -11,7 +11,12 @@ const TABLE_CONFIG = {
       { key: "full_name", label: "Full Name", type: "text", required: true },
       { key: "phone", label: "Phone", type: "text", required: true },
       { key: "email", label: "Email", type: "email", required: true },
+      { key: "password_hash", label: "Password Hash", type: "text" },
+      { key: "wallet_balance", label: "Wallet Balance", type: "number", step: "0.01" },
       { key: "loyalty_points", label: "Loyalty Points", type: "number", step: "1" },
+      { key: "text_updates", label: "Text Updates", type: "checkbox" },
+      { key: "email_updates", label: "Email Updates", type: "checkbox" },
+      { key: "allow_saved_card", label: "Allow Saved Card", type: "checkbox" },
       { key: "auth_user_id", label: "Auth User ID", type: "text" },
       { key: "created_at", label: "Created At", type: "datetime-local", readOnly: true },
       { key: "updated_at", label: "Updated At", type: "datetime-local", readOnly: true }
@@ -75,7 +80,6 @@ const TABLE_CONFIG = {
         type: "select",
         required: true,
         options: [
-          { value: "Drop off", label: "Drop off" },
           { value: "Started", label: "Started" },
           { value: "In Progress", label: "In Progress" },
           { value: "Ready", label: "Ready" },
@@ -198,13 +202,6 @@ const TABLE_CONFIG = {
   }
 };
 
-const HIDDEN_TABLES = new Set([
-  "wallet_transactions",
-  "loyalty_transactions",
-  "saved_payment_methods",
-  "admin_users"
-]);
-
 let initialized = false;
 
 const state = {
@@ -215,9 +212,16 @@ const state = {
   searchColumn: "all",
   isCreating: false,
   relationOptions: {},
-  customerResults: [],
-  selectedCustomerId: null,
-  isLocalAdminMode: false
+  isLocalAdminMode: false,
+  analytics: {
+    orders: [],
+    orderItems: [],
+    metric: "revenue",
+    timeScale: "days",
+    points: [],
+    hoveredIndex: null,
+    loaded: false
+  }
 };
 
 const getConfig = () => TABLE_CONFIG[state.currentTable];
@@ -260,54 +264,10 @@ const formatDateTimeLocal = (value) => {
   return local.toISOString().slice(0, 16);
 };
 
-const formatDisplayDateTime = (value) => {
-  if (!value) return "Not available";
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? "Not available" : parsed.toLocaleString();
-};
-
 const parseDateTimeLocal = (value) => {
   if (!value) return null;
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? value : parsed.toISOString();
-};
-
-const formatCurrency = (amount) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD"
-  }).format(Number(amount || 0));
-
-const getLocalDayStart = (date = new Date()) =>
-  new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-const getLocalWeekStart = (date = new Date()) => {
-  const start = getLocalDayStart(date);
-  start.setDate(start.getDate() - start.getDay());
-  return start;
-};
-
-const getPreTaxOrderAmount = (order) => {
-  const subtotal = Number(order.subtotal);
-  if (Number.isFinite(subtotal)) return subtotal;
-
-  const total = Number(order.total || 0);
-  const tax = Number(order.tax || 0);
-  return Math.max(total - tax, 0);
-};
-
-const matchesCustomerTerm = (customer, term) => {
-  const searchText = [
-    customer.full_name,
-    customer.email,
-    customer.phone,
-    customer.user_id
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  return searchText.includes(term.toLowerCase());
 };
 
 const getSelectedRow = () => {
@@ -577,58 +537,7 @@ const renderTableMeta = () => {
       ? "Local admin mode is active. The portal UI works locally, but database edits still depend on your Supabase table permissions and policies."
       : getConfig().description;
   }
-  if (portalCount) {
-    const visibleTableCount = Object.keys(TABLE_CONFIG).filter((tableName) => !HIDDEN_TABLES.has(tableName)).length;
-    portalCount.textContent = `${visibleTableCount} tables configured`;
-  }
-};
-
-const loadProfitSummary = async (supabase, showToast) => {
-  const todayAmount = document.getElementById("adminProfitToday");
-  const weekAmount = document.getElementById("adminProfitWeek");
-  const todayCount = document.getElementById("adminProfitTodayCount");
-  const weekCount = document.getElementById("adminProfitWeekCount");
-  const updatedText = document.getElementById("adminProfitUpdated");
-
-  if (!todayAmount || !weekAmount || !todayCount || !weekCount || !updatedText) return;
-
-  const now = new Date();
-  const todayStart = getLocalDayStart(now);
-  const tomorrowStart = new Date(todayStart);
-  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-  const weekStart = getLocalWeekStart(now);
-
-  try {
-    const { data, error } = await supabase
-      .from("orders")
-      .select("subtotal, tax, total, order_status, payment_status, created_at")
-      .gte("created_at", weekStart.toISOString())
-      .neq("order_status", "Cancelled")
-      .eq("payment_status", "Paid");
-
-    if (error) throw error;
-
-    const weekOrders = data || [];
-    const todayOrders = weekOrders.filter((order) => {
-      const createdAt = new Date(order.created_at);
-      return createdAt >= todayStart && createdAt < tomorrowStart;
-    });
-
-    const sumOrders = (orders) => orders.reduce((sum, order) => sum + getPreTaxOrderAmount(order), 0);
-
-    todayAmount.textContent = formatCurrency(sumOrders(todayOrders));
-    weekAmount.textContent = formatCurrency(sumOrders(weekOrders));
-    todayCount.textContent = `${todayOrders.length} paid order${todayOrders.length === 1 ? "" : "s"} counted`;
-    weekCount.textContent = `${weekOrders.length} paid order${weekOrders.length === 1 ? "" : "s"} counted`;
-    updatedText.textContent = `Updated ${now.toLocaleString()}. Tax and cancelled orders are excluded.`;
-  } catch (error) {
-    todayAmount.textContent = "$0.00";
-    weekAmount.textContent = "$0.00";
-    todayCount.textContent = "Could not load orders";
-    weekCount.textContent = "Could not load orders";
-    updatedText.textContent = "Profit summary could not be loaded.";
-    showToast("error", error.message || "Could not load profit summary.");
-  }
+  if (portalCount) portalCount.textContent = `${Object.keys(TABLE_CONFIG).length} tables configured`;
 };
 
 const renderAll = () => {
@@ -636,168 +545,6 @@ const renderAll = () => {
   renderTableMeta();
   renderRecordList();
   renderEditor();
-};
-
-const renderCustomerLookupMessage = (message) => {
-  const lookup = document.getElementById("adminCustomerLookup");
-  if (lookup) lookup.innerHTML = `<p class="muted-copy">${escapeHtml(message)}</p>`;
-};
-
-const loadCustomerOrders = async (supabase, userId) => {
-  const { data: orders, error: orderError } = await supabase
-    .from("orders")
-    .select("order_id, service_type, appointment_date, appointment_time, order_status, payment_method, payment_status, subtotal, tax, total, created_at, updated_at")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(50);
-
-  if (orderError) throw orderError;
-
-  const orderIds = (orders || []).map((order) => order.order_id);
-  let items = [];
-
-  if (orderIds.length) {
-    const { data, error } = await supabase
-      .from("order_items")
-      .select("order_id, item_type, quantity, line_total")
-      .in("order_id", orderIds)
-      .order("order_item_id", { ascending: true });
-
-    if (error) throw error;
-    items = data || [];
-  }
-
-  const itemsByOrder = items.reduce((groups, item) => {
-    groups[item.order_id] = groups[item.order_id] || [];
-    groups[item.order_id].push(item);
-    return groups;
-  }, {});
-
-  return (orders || []).map((order) => ({
-    ...order,
-    items: itemsByOrder[order.order_id] || []
-  }));
-};
-
-const renderCustomerLookup = async (supabase, showToast, customerId = state.selectedCustomerId) => {
-  const lookup = document.getElementById("adminCustomerLookup");
-  if (!lookup) return;
-
-  if (!state.customerResults.length) {
-    renderCustomerLookupMessage("Search for a customer to view their profile, loyalty points, contact information, and orders.");
-    return;
-  }
-
-  const selectedCustomer =
-    state.customerResults.find((customer) => String(customer.user_id) === String(customerId)) ||
-    state.customerResults[0];
-
-  state.selectedCustomerId = selectedCustomer.user_id;
-  lookup.innerHTML = '<p class="muted-copy">Loading customer details...</p>';
-
-  try {
-    const orders = await loadCustomerOrders(supabase, selectedCustomer.user_id);
-
-    lookup.innerHTML = `
-      <div class="admin-customer-layout">
-        <div class="admin-customer-results">
-          ${state.customerResults
-            .map((customer) => {
-              const isActive = String(customer.user_id) === String(selectedCustomer.user_id);
-              return `
-                <button type="button" class="admin-customer-result ${isActive ? "active" : ""}" data-customer-id="${escapeHtml(customer.user_id)}">
-                  <strong>${escapeHtml(customer.full_name || "Unnamed customer")}</strong>
-                  <p>${escapeHtml(customer.email || "No email")} | ${escapeHtml(customer.phone || "No phone")}</p>
-                </button>
-              `;
-            })
-            .join("")}
-        </div>
-
-        <div>
-          <div class="admin-customer-profile">
-            <span class="eyebrow">Customer Profile</span>
-            <h3>${escapeHtml(selectedCustomer.full_name || "Unnamed customer")}</h3>
-            <div class="admin-customer-profile-grid">
-              <p><strong>User ID:</strong> #${escapeHtml(selectedCustomer.user_id)}</p>
-              <p><strong>Loyalty:</strong> ${escapeHtml(selectedCustomer.loyalty_points || 0)} pts</p>
-              <p><strong>Email:</strong> ${escapeHtml(selectedCustomer.email || "Not available")}</p>
-              <p><strong>Phone:</strong> ${escapeHtml(selectedCustomer.phone || "Not available")}</p>
-              <p><strong>Created:</strong> ${escapeHtml(formatDisplayDateTime(selectedCustomer.created_at))}</p>
-              <p><strong>Orders:</strong> ${orders.length}</p>
-            </div>
-          </div>
-
-          <div class="admin-customer-orders">
-            ${orders.length
-              ? orders
-                  .map((order) => {
-                    const itemSummary = order.items.length
-                      ? order.items
-                          .map((item) => `${Number(item.quantity || 0)}x ${escapeHtml(item.item_type)} (${formatCurrency(item.line_total)})`)
-                          .join(", ")
-                      : escapeHtml(order.service_type || "No item details");
-
-                    return `
-                      <button type="button" class="admin-customer-order" data-edit-order-id="${escapeHtml(order.order_id)}">
-                        <h4>Order #${escapeHtml(order.order_id)}</h4>
-                        <p><strong>Service:</strong> ${escapeHtml(order.service_type || "Not available")}</p>
-                        <p><strong>Items:</strong> ${itemSummary}</p>
-                        <p><strong>Appointment:</strong> ${escapeHtml(order.appointment_date || "No date")} at ${escapeHtml(order.appointment_time || "No time")}</p>
-                        <p><strong>Status:</strong> ${escapeHtml(order.order_status || "Not available")} | <strong>Payment:</strong> ${escapeHtml(order.payment_status || "Not available")}</p>
-                        <p><strong>Subtotal:</strong> ${formatCurrency(order.subtotal)} | <strong>Total:</strong> ${formatCurrency(order.total)}</p>
-                        <p><strong>Placed:</strong> ${escapeHtml(formatDisplayDateTime(order.created_at))}</p>
-                      </button>
-                    `;
-                  })
-                  .join("")
-              : '<p class="muted-copy">No orders found for this customer.</p>'}
-          </div>
-        </div>
-      </div>
-    `;
-  } catch (error) {
-    showToast("error", error.message || "Could not load customer orders.");
-    renderCustomerLookupMessage("Customer details could not be loaded.");
-  }
-};
-
-const searchCustomers = async (supabase, showToast, term) => {
-  const cleanTerm = term.trim();
-
-  if (!cleanTerm) {
-    state.customerResults = [];
-    state.selectedCustomerId = null;
-    renderCustomerLookupMessage("Enter a customer name, email, or phone number to search.");
-    return;
-  }
-
-  renderCustomerLookupMessage("Searching customers...");
-
-  try {
-    const { data, error } = await supabase
-      .from("users")
-      .select("user_id, full_name, phone, email, loyalty_points, created_at, updated_at")
-      .order("full_name", { ascending: true })
-      .limit(250);
-
-    if (error) throw error;
-
-    state.customerResults = (data || []).filter((customer) => matchesCustomerTerm(customer, cleanTerm));
-    state.selectedCustomerId = state.customerResults[0]?.user_id ?? null;
-
-    if (!state.customerResults.length) {
-      renderCustomerLookupMessage("No customers match that search.");
-      return;
-    }
-
-    await renderCustomerLookup(supabase, showToast);
-  } catch (error) {
-    state.customerResults = [];
-    state.selectedCustomerId = null;
-    showToast("error", error.message || "Could not search customers.");
-    renderCustomerLookupMessage("Customer search could not be loaded.");
-  }
 };
 
 const loadRelationOptions = async (supabase, showToast) => {
@@ -856,36 +603,6 @@ const loadTableRows = async (supabase, showToast) => {
   state.isCreating = false;
   state.selectedRowId = state.rows[0]?.[config.primaryKey] ?? null;
   renderAll();
-  await loadProfitSummary(supabase, showToast);
-};
-
-const openOrderInEditor = async (supabase, showToast, orderId) => {
-  const tableSelect = document.getElementById("adminTableSelect");
-
-  state.currentTable = "orders";
-  state.searchColumn = "all";
-  state.searchTerm = "";
-  state.isCreating = false;
-
-  if (tableSelect instanceof HTMLSelectElement) tableSelect.value = "orders";
-
-  await loadRelationOptions(supabase, showToast);
-
-  const { data, error } = await supabase
-    .from("orders")
-    .select("*")
-    .order("order_id", { ascending: false })
-    .limit(250);
-
-  if (error) {
-    showToast("error", error.message || "Could not load orders.");
-    return;
-  }
-
-  state.rows = data || [];
-  state.selectedRowId = orderId;
-  renderAll();
-  document.querySelector(".admin-editor-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 
 const buildPayloadFromForm = (form) => {
@@ -905,9 +622,314 @@ const buildPayloadFromForm = (form) => {
   return payload;
 };
 
+const ANALYTICS_METRICS = {
+  revenue: { label: "Income", unit: "money", summary: "total income from non-cancelled orders" },
+  orders: { label: "Orders Created", unit: "count", summary: "non-cancelled orders created" },
+  items: { label: "Items Sold", unit: "count", summary: "total item quantity sold" },
+  averageOrder: { label: "Average Order Value", unit: "money", summary: "average value per non-cancelled order" },
+  washFold: { label: "Wash and Fold Orders", unit: "count", summary: "Wash and Fold orders created" },
+  dryCleaning: { label: "Dry Cleaning Orders", unit: "count", summary: "Dry Cleaning orders created" },
+  washIron: { label: "Wash and Iron Orders", unit: "count", summary: "Wash and Iron orders created" },
+  specialty: { label: "Specialty Cleaning Orders", unit: "count", summary: "Specialty Cleaning orders created" }
+};
+
+const formatMoney = (value) => `$${Number(value || 0).toFixed(2)}`;
+const formatNumber = (value) => Number(value || 0).toLocaleString();
+const formatAnalyticsValue = (value, metricKey = state.analytics.metric) =>
+  ANALYTICS_METRICS[metricKey]?.unit === "money" ? formatMoney(value) : formatNumber(value);
+
+const normalizeServiceType = (value) => String(value || "").trim().toLowerCase();
+
+const metricMatchesOrder = (order, metricKey) => {
+  const service = normalizeServiceType(order.service_type);
+  if (metricKey === "washFold") return service === "wash and fold";
+  if (metricKey === "dryCleaning") return service === "dry cleaning";
+  if (metricKey === "washIron") return service === "wash and iron";
+  if (metricKey === "specialty") return service === "specialty cleaning";
+  return true;
+};
+
+const getRowDate = (row) => {
+  const parsed = new Date(row.created_at || row.updated_at || row.appointment_date || "");
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const addDays = (date, days) => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+};
+
+const startOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+const getWeekStart = (date) => {
+  const day = date.getDay();
+  const offset = day === 0 ? -6 : 1 - day;
+  return startOfDay(addDays(date, offset));
+};
+
+const buildTimeBuckets = (scale) => {
+  const now = new Date();
+
+  if (scale === "hours") {
+    return Array.from({ length: 9 }, (_, index) => {
+      const hour = 9 + index;
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour);
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour + 1);
+      const labelHour = hour > 12 ? hour - 12 : hour;
+      const suffix = hour >= 12 ? "PM" : "AM";
+      return { label: `${labelHour} ${suffix}`, start, end };
+    });
+  }
+
+  if (scale === "weeks") {
+    const currentWeek = getWeekStart(now);
+    return Array.from({ length: 10 }, (_, index) => {
+      const start = addDays(currentWeek, (index - 9) * 7);
+      const end = addDays(start, 7);
+      return { label: `${start.getMonth() + 1}/${start.getDate()}`, start, end };
+    });
+  }
+
+  if (scale === "months") {
+    return Array.from({ length: 12 }, (_, index) => {
+      const start = new Date(now.getFullYear(), now.getMonth() - 11 + index, 1);
+      const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+      return { label: start.toLocaleString(undefined, { month: "short" }), start, end };
+    });
+  }
+
+  if (scale === "years") {
+    return Array.from({ length: 5 }, (_, index) => {
+      const year = now.getFullYear() - 4 + index;
+      return { label: String(year), start: new Date(year, 0, 1), end: new Date(year + 1, 0, 1) };
+    });
+  }
+
+  const today = startOfDay(now);
+  return Array.from({ length: 14 }, (_, index) => {
+    const start = addDays(today, index - 13);
+    const end = addDays(start, 1);
+    return { label: `${start.getMonth() + 1}/${start.getDate()}`, start, end };
+  });
+};
+
+const isInsideBucket = (date, bucket) => date && date >= bucket.start && date < bucket.end;
+
+const getAnalyticsPoints = () => {
+  const metric = state.analytics.metric;
+  const buckets = buildTimeBuckets(state.analytics.timeScale);
+  const activeOrders = state.analytics.orders.filter((order) => order.order_status !== "Cancelled");
+
+  return buckets.map((bucket) => {
+    const orders = activeOrders.filter((order) => isInsideBucket(getRowDate(order), bucket));
+    const items = state.analytics.orderItems.filter((item) => isInsideBucket(getRowDate(item), bucket));
+    const revenue = orders.reduce((sum, order) => sum + Number(order.total || 0), 0);
+    const matchingOrders = orders.filter((order) => metricMatchesOrder(order, metric));
+
+    let value = revenue;
+    if (metric === "orders") value = orders.length;
+    if (metric === "items") value = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+    if (metric === "averageOrder") value = orders.length ? revenue / orders.length : 0;
+    if (["washFold", "dryCleaning", "washIron", "specialty"].includes(metric)) value = matchingOrders.length;
+
+    return { ...bucket, value };
+  });
+};
+
+const renderAnalyticsSummary = () => {
+  const activeOrders = state.analytics.orders.filter((order) => order.order_status !== "Cancelled");
+  const revenue = activeOrders.reduce((sum, order) => sum + Number(order.total || 0), 0);
+  const itemCount = state.analytics.orderItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const average = activeOrders.length ? revenue / activeOrders.length : 0;
+
+  const revenueEl = document.getElementById("adminStatRevenue");
+  const ordersEl = document.getElementById("adminStatOrders");
+  const itemsEl = document.getElementById("adminStatItems");
+  const averageEl = document.getElementById("adminStatAverage");
+
+  if (revenueEl) revenueEl.textContent = formatMoney(revenue);
+  if (ordersEl) ordersEl.textContent = formatNumber(activeOrders.length);
+  if (itemsEl) itemsEl.textContent = formatNumber(itemCount);
+  if (averageEl) averageEl.textContent = formatMoney(average);
+};
+
+const drawAnalyticsChart = () => {
+  const canvas = document.getElementById("adminStatsChart");
+  if (!(canvas instanceof HTMLCanvasElement)) return;
+
+  const wrapper = canvas.parentElement;
+  const ctx = canvas.getContext("2d");
+  if (!ctx || !wrapper) return;
+
+  const ratio = window.devicePixelRatio || 1;
+  const width = Math.max(620, Math.floor(wrapper.clientWidth));
+  const height = Math.max(360, Math.floor(wrapper.clientHeight || 420));
+  canvas.width = width * ratio;
+  canvas.height = height * ratio;
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+
+  const points = state.analytics.points;
+  const metric = ANALYTICS_METRICS[state.analytics.metric];
+  const maxValue = Math.max(...points.map((point) => point.value), 0);
+  const niceMax = maxValue <= 0 ? 1 : maxValue * 1.16;
+  const plot = { left: 70, right: 24, top: 26, bottom: 64 };
+  const plotWidth = width - plot.left - plot.right;
+  const plotHeight = height - plot.top - plot.bottom;
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.strokeStyle = "rgba(15, 79, 150, 0.12)";
+  ctx.lineWidth = 1;
+  ctx.fillStyle = "#58708d";
+  ctx.font = "12px Merriweather, Georgia, serif";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+
+  for (let i = 0; i <= 4; i += 1) {
+    const y = plot.top + plotHeight * (i / 4);
+    const value = niceMax * (1 - i / 4);
+    ctx.beginPath();
+    ctx.moveTo(plot.left, y);
+    ctx.lineTo(width - plot.right, y);
+    ctx.stroke();
+    ctx.fillText(metric.unit === "money" ? `$${Math.round(value)}` : Math.round(value), plot.left - 12, y);
+  }
+
+  if (!points.length) return;
+
+  const slot = plotWidth / points.length;
+  const barWidth = Math.max(18, Math.min(54, slot * 0.58));
+  const linePoints = [];
+
+  points.forEach((point, index) => {
+    const x = plot.left + slot * index + slot / 2;
+    const barHeight = (point.value / niceMax) * plotHeight;
+    const y = plot.top + plotHeight - barHeight;
+    const isHovered = state.analytics.hoveredIndex === index;
+
+    linePoints.push({ x, y });
+    const gradient = ctx.createLinearGradient(0, y, 0, plot.top + plotHeight);
+    gradient.addColorStop(0, isHovered ? "#0f4f96" : "#4b86d8");
+    gradient.addColorStop(1, isHovered ? "#7aa7e8" : "#cfdffb");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x - barWidth / 2, y, barWidth, Math.max(2, barHeight));
+
+    ctx.fillStyle = isHovered ? "#0f4f96" : "#58708d";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(point.label, x, plot.top + plotHeight + 18);
+  });
+
+  ctx.strokeStyle = "#247a4d";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  linePoints.forEach((point, index) => {
+    if (index === 0) ctx.moveTo(point.x, point.y);
+    else ctx.lineTo(point.x, point.y);
+  });
+  ctx.stroke();
+
+  linePoints.forEach((point, index) => {
+    ctx.beginPath();
+    ctx.fillStyle = state.analytics.hoveredIndex === index ? "#0f4f96" : "#247a4d";
+    ctx.arc(point.x, point.y, state.analytics.hoveredIndex === index ? 6 : 4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+};
+
+const renderAnalytics = () => {
+  const metricSelect = document.getElementById("adminMetricSelect");
+  const timeScaleSelect = document.getElementById("adminTimeScaleSelect");
+  const title = document.getElementById("adminChartTitle");
+  const subtitle = document.getElementById("adminChartSubtitle");
+  const total = document.getElementById("adminChartTotal");
+  const metric = ANALYTICS_METRICS[state.analytics.metric] || ANALYTICS_METRICS.revenue;
+
+  state.analytics.points = getAnalyticsPoints();
+  const totalValue =
+    state.analytics.metric === "averageOrder"
+      ? state.analytics.points.reduce((sum, point) => sum + point.value, 0) / Math.max(state.analytics.points.filter((point) => point.value).length, 1)
+      : state.analytics.points.reduce((sum, point) => sum + point.value, 0);
+
+  if (metricSelect instanceof HTMLSelectElement) metricSelect.value = state.analytics.metric;
+  if (timeScaleSelect instanceof HTMLSelectElement) timeScaleSelect.value = state.analytics.timeScale;
+  if (title) title.textContent = `${metric.label} by ${state.analytics.timeScale}`;
+  if (subtitle) {
+    subtitle.textContent = state.analytics.loaded
+      ? `Showing ${metric.summary}. Use the controls to change the x axis or y axis.`
+      : "Loading company stats...";
+  }
+  if (total) total.textContent = `${formatAnalyticsValue(totalValue)} ${state.analytics.metric === "averageOrder" ? "average" : "total"}`;
+
+  document.querySelectorAll("[data-admin-metric]").forEach((button) => {
+    button.classList.toggle("active", button.getAttribute("data-admin-metric") === state.analytics.metric);
+  });
+
+  renderAnalyticsSummary();
+  drawAnalyticsChart();
+};
+
+const updateAnalyticsHover = (event) => {
+  const canvas = document.getElementById("adminStatsChart");
+  const tooltip = document.getElementById("adminChartTooltip");
+  if (!(canvas instanceof HTMLCanvasElement) || !(tooltip instanceof HTMLElement) || !state.analytics.points.length) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const plotLeft = 70;
+  const plotRight = 24;
+  const plotWidth = rect.width - plotLeft - plotRight;
+  const slot = plotWidth / state.analytics.points.length;
+  const index = Math.max(0, Math.min(state.analytics.points.length - 1, Math.floor((x - plotLeft) / slot)));
+  const point = state.analytics.points[index];
+
+  state.analytics.hoveredIndex = index;
+  tooltip.hidden = false;
+  tooltip.style.left = `${Math.min(rect.width - 170, Math.max(12, x + 12))}px`;
+  tooltip.style.top = `${Math.max(12, event.clientY - rect.top - 42)}px`;
+  tooltip.innerHTML = `<strong>${escapeHtml(point.label)}</strong><span>${escapeHtml(ANALYTICS_METRICS[state.analytics.metric].label)}: ${escapeHtml(formatAnalyticsValue(point.value))}</span>`;
+  drawAnalyticsChart();
+};
+
+const clearAnalyticsHover = () => {
+  const tooltip = document.getElementById("adminChartTooltip");
+  state.analytics.hoveredIndex = null;
+  if (tooltip instanceof HTMLElement) tooltip.hidden = true;
+  drawAnalyticsChart();
+};
+
+const loadAnalyticsData = async (supabase, showToast) => {
+  const [{ data: orders, error: ordersError }, { data: orderItems, error: itemsError }] = await Promise.all([
+    supabase
+      .from("orders")
+      .select("order_id, service_type, order_status, payment_status, total, created_at, updated_at")
+      .order("created_at", { ascending: false })
+      .limit(1000),
+    supabase
+      .from("order_items")
+      .select("order_item_id, order_id, item_type, quantity, line_total, created_at")
+      .order("created_at", { ascending: false })
+      .limit(1000)
+  ]);
+
+  if (ordersError || itemsError) {
+    const message = ordersError?.message || itemsError?.message || "Could not load company stats.";
+    showToast("error", message);
+    return;
+  }
+
+  state.analytics.orders = orders || [];
+  state.analytics.orderItems = orderItems || [];
+  state.analytics.loaded = true;
+  renderAnalytics();
+};
+
 const wireEvents = (supabase, showToast) => {
-  const customerSearchForm = document.getElementById("adminCustomerSearchForm");
-  const customerSearchInput = document.getElementById("adminCustomerSearchInput");
   const tableSelect = document.getElementById("adminTableSelect");
   const searchColumn = document.getElementById("adminSearchColumn");
   const searchInput = document.getElementById("adminSearchInput");
@@ -916,27 +938,11 @@ const wireEvents = (supabase, showToast) => {
   const recordList = document.getElementById("adminRecordList");
   const form = document.getElementById("adminEditorForm");
   const deleteButton = document.getElementById("adminDeleteButton");
-
-  customerSearchForm?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const term = customerSearchInput instanceof HTMLInputElement ? customerSearchInput.value : "";
-    await searchCustomers(supabase, showToast, term);
-  });
-
-  document.getElementById("adminCustomerLookup")?.addEventListener("click", async (event) => {
-    const orderTarget = event.target instanceof HTMLElement ? event.target.closest("[data-edit-order-id]") : null;
-    if (orderTarget instanceof HTMLElement) {
-      const orderId = orderTarget.dataset.editOrderId;
-      if (orderId) await openOrderInEditor(supabase, showToast, orderId);
-      return;
-    }
-
-    const target = event.target instanceof HTMLElement ? event.target.closest("[data-customer-id]") : null;
-    if (!(target instanceof HTMLElement)) return;
-
-    state.selectedCustomerId = target.dataset.customerId || null;
-    await renderCustomerLookup(supabase, showToast, state.selectedCustomerId);
-  });
+  const analyticsRefreshButton = document.getElementById("adminAnalyticsRefreshButton");
+  const timeScaleSelect = document.getElementById("adminTimeScaleSelect");
+  const metricSelect = document.getElementById("adminMetricSelect");
+  const metricButtons = document.getElementById("adminMetricButtons");
+  const chartCanvas = document.getElementById("adminStatsChart");
 
   tableSelect?.addEventListener("change", async (event) => {
     if (!(event.target instanceof HTMLSelectElement)) return;
@@ -961,8 +967,37 @@ const wireEvents = (supabase, showToast) => {
 
   refreshButton?.addEventListener("click", async () => {
     await loadTableRows(supabase, showToast);
+    await loadAnalyticsData(supabase, showToast);
     showToast("success", `${getConfig().label} refreshed.`);
   });
+
+  analyticsRefreshButton?.addEventListener("click", async () => {
+    await loadAnalyticsData(supabase, showToast);
+    showToast("success", "Company stats refreshed.");
+  });
+
+  timeScaleSelect?.addEventListener("change", (event) => {
+    if (!(event.target instanceof HTMLSelectElement)) return;
+    state.analytics.timeScale = event.target.value;
+    renderAnalytics();
+  });
+
+  metricSelect?.addEventListener("change", (event) => {
+    if (!(event.target instanceof HTMLSelectElement)) return;
+    state.analytics.metric = event.target.value;
+    renderAnalytics();
+  });
+
+  metricButtons?.addEventListener("click", (event) => {
+    const target = event.target instanceof HTMLElement ? event.target.closest("[data-admin-metric]") : null;
+    if (!(target instanceof HTMLElement)) return;
+    state.analytics.metric = target.getAttribute("data-admin-metric") || state.analytics.metric;
+    renderAnalytics();
+  });
+
+  chartCanvas?.addEventListener("mousemove", updateAnalyticsHover);
+  chartCanvas?.addEventListener("mouseleave", clearAnalyticsHover);
+  window.addEventListener("resize", drawAnalyticsChart);
 
   newButton?.addEventListener("click", () => {
     state.isCreating = true;
@@ -1026,6 +1061,7 @@ const wireEvents = (supabase, showToast) => {
       }
 
       await loadTableRows(supabase, showToast);
+      await loadAnalyticsData(supabase, showToast);
     } catch (error) {
       showToast("error", error.message || `Could not save ${config.label}.`);
     }
@@ -1053,6 +1089,7 @@ const wireEvents = (supabase, showToast) => {
 
       showToast("success", `${config.label} record deleted.`);
       await loadTableRows(supabase, showToast);
+      await loadAnalyticsData(supabase, showToast);
     } catch (error) {
       showToast("error", error.message || `Could not delete ${config.label}.`);
     }
@@ -1078,7 +1115,6 @@ export const initAdminPortal = async (supabase, sessionState, showToast = fallba
 
   if (tableSelect && !tableSelect.options.length) {
     tableSelect.innerHTML = Object.entries(TABLE_CONFIG)
-      .filter(([key]) => !HIDDEN_TABLES.has(key))
       .map(([key, config]) => `<option value="${key}">${config.label}</option>`)
       .join("");
   }
@@ -1091,5 +1127,7 @@ export const initAdminPortal = async (supabase, sessionState, showToast = fallba
   state.isLocalAdminMode = Boolean(sessionState.adminProfile?.isLocalFallback);
   state.currentTable = tableSelect?.value || state.currentTable;
   renderAll();
+  renderAnalytics();
+  await loadAnalyticsData(supabase, showToast);
   await loadTableRows(supabase, showToast);
 };
