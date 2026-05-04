@@ -128,6 +128,31 @@ const TABLE_CONFIG = {
       { key: "created_at", label: "Created At", type: "datetime-local", readOnly: true }
     ]
   },
+  vendors: {
+    label: "Vendors",
+    description: "Vendor orders, delivery timing, and fulfillment notes.",
+    primaryKey: "vendor_id",
+    searchableColumns: ["vendor_id", "vendor_name", "delivery_status", "description"],
+    fields: [
+      { key: "vendor_id", label: "Vendor ID", type: "number", readOnly: true },
+      { key: "vendor_name", label: "Vendor Name", type: "text", required: true },
+      { key: "order_cost", label: "Order Cost", type: "number", step: "0.01", required: true },
+      { key: "order_date", label: "Order Date", type: "date", required: true },
+      { key: "delivery_date", label: "Delivery Date", type: "date" },
+      {
+        key: "delivery_status",
+        label: "Delivery Status",
+        type: "select",
+        required: true,
+        options: [
+          { value: "Delivered", label: "Delivered" },
+          { value: "Not Delivered", label: "Not Delivered" }
+        ]
+      },
+      { key: "description", label: "Description", type: "textarea" },
+      { key: "created_at", label: "Created At", type: "datetime-local", readOnly: true }
+    ]
+  },
   status_updates: {
     label: "Status Updates",
     description: "Timeline events attached to each order for customer progress tracking.",
@@ -204,6 +229,18 @@ const HIDDEN_TABLES = new Set([
   "saved_payment_methods",
   "admin_users"
 ]);
+
+const ORDER_ITEM_CATALOG = {
+  shirts: { label: "T-Shirts and Shirts", unitPrice: 3.0 },
+  pants: { label: "Pants", unitPrice: 5.0 },
+  jackets: { label: "Jackets", unitPrice: 6.0 },
+  suits: { label: "Suits", unitPrice: 10.0 },
+  dresses: { label: "Dresses", unitPrice: 10.0 },
+  bedsheets: { label: "Bed Sheets", unitPrice: 8.0 },
+  curtains: { label: "Curtains", unitPrice: 12.0 },
+  leather: { label: "Leather Items", unitPrice: 15.0 },
+  other: { label: "Other Items", unitPrice: 0.0 }
+};
 
 let initialized = false;
 
@@ -488,6 +525,98 @@ const createFieldMarkup = (field, value) => {
   `;
 };
 
+const getFieldConfig = (tableKey, fieldKey) =>
+  TABLE_CONFIG[tableKey]?.fields.find((field) => field.key === fieldKey) || null;
+
+const createSelectMarkup = (id, name, label, options, selectedValue = "", required = false, placeholder = "") => `
+  <div class="field-group">
+    <label for="${id}">${label}</label>
+    <select id="${id}" name="${name}" ${required ? "required" : ""}>
+      <option value="">${placeholder || `Select ${label}`}</option>
+      ${options
+        .map(
+          (option) =>
+            `<option value="${escapeHtml(option.value)}" ${String(selectedValue) === String(option.value) ? "selected" : ""}>${escapeHtml(option.label)}</option>`
+        )
+        .join("")}
+    </select>
+  </div>
+`;
+
+const parseAdminOrderItems = (formData) =>
+  Object.entries(ORDER_ITEM_CATALOG)
+    .map(([key, config]) => {
+      const quantity = parseInt(String(formData.get(`order_item_${key}`) || "0"), 10);
+      return {
+        itemType: config.label,
+        quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 0,
+        unitPrice: config.unitPrice
+      };
+    })
+    .filter((item) => item.quantity > 0);
+
+const calculateAdminOrderTotals = (items) => {
+  const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  const roundedSubtotal = Number(subtotal.toFixed(2));
+  const tax = Number((roundedSubtotal * 0.05).toFixed(2));
+  const total = Number((roundedSubtotal + tax).toFixed(2));
+  return { subtotal: roundedSubtotal, tax, total };
+};
+
+const createOrderEditorMarkup = () => {
+  const serviceOptions = getFieldConfig("orders", "service_type")?.options || [];
+  const paymentOptions = getFieldConfig("orders", "payment_method")?.options || [];
+  const userOptions = state.relationOptions.users || [];
+  const selectedCustomerId = state.selectedCustomerId || "";
+
+  return `
+    <div class="field-group full">
+      <p class="muted-copy">Create a complete order from one screen. This will create the order row and all matching order item rows automatically.</p>
+    </div>
+    ${createSelectMarkup("field-order-customer-type", "order_customer_type", "Customer Type", [
+      { value: "registered", label: "Registered Customer" },
+      { value: "guest", label: "Guest Order" }
+    ], selectedCustomerId ? "registered" : "guest", true)}
+    ${createSelectMarkup("field-user-id", "user_id", "Registered Customer", userOptions, selectedCustomerId, false, "Select customer")}
+    <div class="field-group">
+      <label for="field-guest-full-name">Guest Full Name</label>
+      <input id="field-guest-full-name" name="guest_full_name" type="text" placeholder="Guest full name">
+    </div>
+    <div class="field-group">
+      <label for="field-guest-phone">Guest Phone</label>
+      <input id="field-guest-phone" name="guest_phone" type="text" placeholder="Guest phone number">
+    </div>
+    ${createSelectMarkup("field-service-type", "service_type", "Service Type", serviceOptions, "", true)}
+    <div class="field-group">
+      <label for="field-appointment-date">Appointment Date</label>
+      <input id="field-appointment-date" name="appointment_date" type="date" required>
+    </div>
+    <div class="field-group">
+      <label for="field-appointment-time">Appointment Time</label>
+      <input id="field-appointment-time" name="appointment_time" type="text" placeholder="2:00 PM" required>
+    </div>
+    ${createSelectMarkup("field-payment-method", "payment_method", "Payment Method", paymentOptions, "cash", true)}
+    <div class="field-group full">
+      <label for="field-order-notes">Notes</label>
+      <textarea id="field-order-notes" name="notes" placeholder="Pickup notes, stain notes, or special instructions"></textarea>
+    </div>
+    <div class="field-group full">
+      <h3>Items</h3>
+      <p class="muted-copy">Enter quantities for the items in this order. Totals will be calculated automatically when the order is created.</p>
+    </div>
+    ${Object.entries(ORDER_ITEM_CATALOG)
+      .map(
+        ([key, item]) => `
+          <div class="field-group">
+            <label for="field-order-item-${key}">${escapeHtml(item.label)}</label>
+            <input id="field-order-item-${key}" name="order_item_${key}" type="number" min="0" step="1" value="0">
+          </div>
+        `
+      )
+      .join("")}
+  `;
+};
+
 const renderSearchColumns = () => {
   const select = document.getElementById("adminSearchColumn");
   const config = getConfig();
@@ -552,6 +681,15 @@ const renderEditor = () => {
     fieldsContainer.innerHTML = '<p class="muted-copy">The editor will populate once you select a record.</p>';
     deleteButton.disabled = true;
     saveButton.textContent = "Save Changes";
+    return;
+  }
+
+  if (state.isCreating && ["orders", "order_items"].includes(state.currentTable)) {
+    title.textContent = "Create Order record";
+    lead.textContent = "Create a new order and its order items together from the admin portal.";
+    saveButton.textContent = "Create Order";
+    fieldsContainer.innerHTML = createOrderEditorMarkup();
+    deleteButton.disabled = true;
     return;
   }
 
@@ -840,6 +978,10 @@ const loadRelationOptions = async (supabase, showToast) => {
 
 const loadTableRows = async (supabase, showToast) => {
   const config = getConfig();
+  state.rows = [];
+  state.selectedRowId = null;
+  state.isCreating = false;
+  renderAll();
   await loadRelationOptions(supabase, showToast);
   const { data, error } = await supabase
     .from(state.currentTable)
@@ -848,6 +990,7 @@ const loadTableRows = async (supabase, showToast) => {
     .limit(250);
 
   if (error) {
+    renderAll();
     showToast("error", error.message || `Could not load ${config.label}.`);
     return;
   }
@@ -905,6 +1048,104 @@ const buildPayloadFromForm = (form) => {
   return payload;
 };
 
+const createAdminOrderRecord = async (supabase) => {
+  const form = document.getElementById("adminEditorForm");
+  if (!(form instanceof HTMLFormElement)) {
+    throw new Error("The order form is not available right now.");
+  }
+
+  const formData = new FormData(form);
+  const customerType = String(formData.get("order_customer_type") || "guest");
+  const serviceType = String(formData.get("service_type") || "").trim();
+  const appointmentDate = String(formData.get("appointment_date") || "").trim();
+  const appointmentTime = String(formData.get("appointment_time") || "").trim();
+  const paymentMethod = String(formData.get("payment_method") || "").trim();
+  const notes = String(formData.get("notes") || "").trim();
+  const items = parseAdminOrderItems(formData);
+
+  if (!serviceType || !appointmentDate || !appointmentTime || !paymentMethod) {
+    throw new Error("Service, appointment date, appointment time, and payment method are required.");
+  }
+
+  if (!items.length) {
+    throw new Error("Add at least one order item before creating the order.");
+  }
+
+  let userId = null;
+  let guestOrderId = null;
+
+  if (customerType === "registered") {
+    userId = Number(formData.get("user_id") || 0);
+    if (!userId) {
+      throw new Error("Select a registered customer before creating this order.");
+    }
+  } else {
+    const guestName = String(formData.get("guest_full_name") || "").trim();
+    const guestPhone = String(formData.get("guest_phone") || "").trim();
+
+    if (!guestName || !guestPhone) {
+      throw new Error("Guest name and phone are required for guest orders.");
+    }
+
+    const { data: guest, error: guestError } = await supabase
+      .from("guest_orders")
+      .insert({ full_name: guestName, phone: guestPhone })
+      .select("guest_order_id")
+      .single();
+
+    if (guestError) throw guestError;
+    guestOrderId = guest.guest_order_id;
+  }
+
+  const { subtotal, tax, total } = calculateAdminOrderTotals(items);
+
+  const { data: order, error: orderError } = await supabase
+    .from("orders")
+    .insert({
+      user_id: userId,
+      guest_order_id: guestOrderId,
+      service_type: serviceType,
+      appointment_date: appointmentDate,
+      appointment_time: appointmentTime,
+      notes: notes || null,
+      order_status: "Drop off",
+      payment_method: paymentMethod,
+      payment_status: paymentMethod === "cash" ? "Pending" : "Paid",
+      subtotal,
+      tax,
+      total
+    })
+    .select("order_id")
+    .single();
+
+  if (orderError) throw orderError;
+
+  const orderId = order.order_id;
+
+  const { error: itemsError } = await supabase.from("order_items").insert(
+    items.map((item) => ({
+      order_id: orderId,
+      item_type: item.itemType,
+      quantity: item.quantity,
+      unit_price: item.unitPrice,
+      line_total: Number((item.quantity * item.unitPrice).toFixed(2))
+    }))
+  );
+
+  if (itemsError) throw itemsError;
+
+  const { error: statusError } = await supabase.from("status_updates").insert({
+    order_id: orderId,
+    status: "Drop off",
+    note: "Order created from admin portal",
+    updated_by: "Admin Portal"
+  });
+
+  if (statusError) throw statusError;
+
+  return orderId;
+};
+
 const wireEvents = (supabase, showToast) => {
   const customerSearchForm = document.getElementById("adminCustomerSearchForm");
   const customerSearchInput = document.getElementById("adminCustomerSearchInput");
@@ -943,7 +1184,11 @@ const wireEvents = (supabase, showToast) => {
     state.currentTable = event.target.value;
     state.searchColumn = "all";
     state.searchTerm = "";
+    state.rows = [];
+    state.selectedRowId = null;
+    state.isCreating = false;
     if (searchInput instanceof HTMLInputElement) searchInput.value = "";
+    renderAll();
     await loadTableRows(supabase, showToast);
   });
 
@@ -964,7 +1209,11 @@ const wireEvents = (supabase, showToast) => {
     showToast("success", `${getConfig().label} refreshed.`);
   });
 
-  newButton?.addEventListener("click", () => {
+  newButton?.addEventListener("click", async () => {
+    if (["orders", "order_items"].includes(state.currentTable)) {
+      await loadRelationOptions(supabase, showToast);
+    }
+
     state.isCreating = true;
     state.selectedRowId = null;
     renderRecordList();
@@ -999,9 +1248,22 @@ const wireEvents = (supabase, showToast) => {
     if (!(form instanceof HTMLFormElement)) return;
 
     const config = getConfig();
-    const payload = buildPayloadFromForm(form);
 
     try {
+      if (state.isCreating && ["orders", "order_items"].includes(state.currentTable)) {
+        const orderId = await createAdminOrderRecord(supabase);
+        state.currentTable = "orders";
+        const activeTableSelect = document.getElementById("adminTableSelect");
+        if (activeTableSelect instanceof HTMLSelectElement) activeTableSelect.value = "orders";
+        state.selectedRowId = orderId;
+        state.isCreating = false;
+        showToast("success", "Order record created.");
+        await loadTableRows(supabase, showToast);
+        return;
+      }
+
+      const payload = buildPayloadFromForm(form);
+
       if (state.isCreating) {
         const { data, error } = await supabase
           .from(state.currentTable)

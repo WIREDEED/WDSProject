@@ -5,7 +5,6 @@ export const ROUTE_TO_FILE = {
   "/register": "register.html",
   "/login": "login.html",
   "/admin-login": "admin-login.html",
-  "/admin-portal": "admin-portal.html",
   "/appointment": "appointment.html",
   "/clothing": "clothing.html",
   "/review": "review.html",
