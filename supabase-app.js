@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from "../supabaseClient.js";
+import { supabase, isSupabaseConfigured } from "./supabaseClient.js";
 import {
   getSessionState,
   updateAuthNavigation,
@@ -7,15 +7,15 @@ import {
   redirectToLogin,
   redirectToAdminLogin,
   clearAdminPortalVerification
-} from "./state.js?v=admin-boot-3";
-import { loadDashboardData } from "./dashboard.js?v=admin-boot-4";
-import { initAdminPortal } from "./admin.js?v=admin-boot-4";
+} from "./state.js";
+import { loadDashboardData } from "./dashboard.js";
+import { initAdminPortal } from "./admin.js";
 import {
   bindLoginForm,
   bindRegisterForm,
   bindAccountForm,
   bindReviewForm
-} from "./handlers.js?v=admin-boot-4";
+} from "./handlers.js";
 
 const clearSupabaseAuthStorage = () => {
   [window.localStorage, window.sessionStorage].forEach((storage) => {
