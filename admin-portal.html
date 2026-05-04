@@ -131,7 +131,16 @@
       </div>
 
       <div class="hero-card dashboard-panel admin-editor-panel">
-        <span class="eyebrow">Record Editor</span>
+        <div class="admin-editor-header">
+          <span class="eyebrow">Record Editor</span>
+          <button
+            type="button"
+            class="btn btn-outline admin-editor-new-button"
+            onclick="document.getElementById('adminNewRecordButton')?.click()"
+          >
+            Create New Record
+          </button>
+        </div>
         <h2 id="adminEditorTitle">Select a record</h2>
         <p id="adminEditorLead">Choose a row from the browser to review and update its values here.</p>
 

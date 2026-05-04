@@ -1005,6 +1005,18 @@ textarea {
   grid-template-columns: 1.35fr 0.8fr;
 }
 
+.admin-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-editor-new-button {
+  margin-left: auto;
+}
+
 .admin-status-box {
   align-items: flex-start;
   text-align: left;
@@ -1591,6 +1603,16 @@ textarea {
   border: 1px solid rgba(15, 79, 150, 0.14);
   border-radius: var(--radius-sm);
   background: #ffffff;
+}
+
+.current-order-items {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: var(--text-light);
+}
+
+.current-order-items li + li {
+  margin-top: 4px;
 }
 
 .current-order-card .cancel-order-button {
